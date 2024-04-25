@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "tda-for-fairness"
+version = "0.1.0"
+description = ""
+authors = ["Anastasia Alekseeva <alekseevaas21@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+pandas = "^2.2.2"
+transformers = "^4.40.0"
+torchvision = "^0.17.2"
+torch = "^2.2.2"
+dill = "^0.3.8"
+faiss-cpu = "^1.8.0"
+lightning = "^2.2.2"
+datasets = "^2.18.0"
+scikit-learn = "^1.4.2"
+matplotlib = "^3.8.4"
+
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.29.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
