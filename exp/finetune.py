@@ -11,7 +11,7 @@ def finetune_model(train_texts,val_texts,model, tokenizer,output_dir):
     
     DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
     # Create checkpoint directory if it doesn't exist
-    os.makedirs(f"{output_dir}/"+config.CHECKPOINT_DIR, exist_ok=True)
+    os.makedirs(f"{output_dir}"+config.CHECKPOINT_DIR, exist_ok=True)
 
     # Initialize a deque to store checkpoint paths
     checkpoint_paths = deque(maxlen=config.NUM_CHECKPOINTS_TO_KEEP)
@@ -63,7 +63,7 @@ def finetune_model(train_texts,val_texts,model, tokenizer,output_dir):
         print(f"Validation Accuracy: {val_accuracy:.4f}")
         
         # Save checkpoint
-        checkpoint_path = os.path.join(f"{output_dir}/"+ config.CHECKPOINT_DIR, f"{config.CHECKPOINT_PREFIX}{epoch+1}.pt")
+        checkpoint_path = os.path.join(f"{output_dir}"+ config.CHECKPOINT_DIR, f"{config.CHECKPOINT_PREFIX}{epoch+1}.pt")
         torch.save({
             'epoch': epoch + 1,
             'model_state_dict': model.state_dict(),
@@ -83,7 +83,7 @@ def finetune_model(train_texts,val_texts,model, tokenizer,output_dir):
         # Save best model
         if val_loss < best_val_loss:
             best_val_loss = val_loss
-            torch.save(model.state_dict(), os.path.join(f"{output_dir}/"+ config.CHECKPOINT_DIR, 'best_model.pt'))
+            torch.save(model.state_dict(), os.path.join(f"{output_dir}"+ config.CHECKPOINT_DIR, 'best_model.pt'))
 
     # Save the final fine-tuned model
-    model.save_pretrained(f"{output_dir}/finetuned_model")
+    model.save_pretrained(f"{output_dir} finetuned_model")

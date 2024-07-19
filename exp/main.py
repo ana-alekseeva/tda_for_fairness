@@ -1,7 +1,7 @@
 import utils
 import config
 from finetune import finetune_model
-from transformers import BertForSequenceClassification, BertTokenizer,
+from transformers import BertForSequenceClassification, BertTokenizer
 
 def main():
 
@@ -21,7 +21,7 @@ def main():
    # first_module_baseline.get_gradient_scores()
 
     model = BertForSequenceClassification.from_pretrained(config.BASE_MODEL_NAME)
-    finetune_model(annotated_train, annotated_test,model, tokenizer,"finetuned_base_model")
+    finetune_model(annotated_train, annotated_test,model, tokenizer,"../../output/base_model_finetuning/")
 
 
 
