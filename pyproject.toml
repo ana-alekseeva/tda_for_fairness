@@ -17,6 +17,11 @@ lightning = "^2.2.2"
 datasets = "^2.18.0"
 scikit-learn = "^1.4.2"
 matplotlib = "^3.8.4"
+kronfluence = "^0.0.2"
+tueplots = "^0.0.15"
+traker = "^0.3.2"
+nltk = "^3.8.1"
+rank-bm25 = "^0.2.2"
 
 
 [tool.poetry.group.dev.dependencies]
