@@ -20,7 +20,7 @@ def main():
    # first_module_baseline.get_FAISS_scores()
    # first_module_baseline.get_gradient_scores()
 
-    model = BertForSequenceClassification.from_pretrained(config.BASE_MODEL_NAME)
+    model = BertForSequenceClassification.from_pretrained(config.BASE_MODEL_NAME,num_labels = 2)
     finetune_model(annotated_train, annotated_test,model, tokenizer,"../../output/base_model_finetuning/")
 
 

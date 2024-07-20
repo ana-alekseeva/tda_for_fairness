@@ -6,8 +6,14 @@ import numpy as np
 import config
 from collections import deque
 import os
+import random
 
 def finetune_model(train_texts,val_texts,model, tokenizer,output_dir):
+    seed_val = 42
+    random.seed(seed_val)
+    np.random.seed(seed_val)
+    torch.manual_seed(seed_val)
+    torch.cuda.manual_seed_all(seed_val)
     
     DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
     # Create checkpoint directory if it doesn't exist

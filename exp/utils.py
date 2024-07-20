@@ -15,6 +15,7 @@ from kronfluence.analyzer import Analyzer, prepare_model
 from kronfluence.task import Task
 from typing import List, Optional, Tuple
 from torch import nn
+import math
 
 from tqdm import tqdm
 from trak import TRAKer
@@ -168,7 +169,7 @@ class FirstModuleBaseline():
         train_attention_mask = train_encoding['attention_mask']
 
         # Prepare the test sample
-        test_encoding = self.tokenizer(self.test_texts, return_tensors='pt', padding=True, truncation=True, max_length=512)
+        test_encoding = self.tokenizer(self.test_texts, return_tensors='pt', padding=True, truncation=True, max_length=128)
         test_input_ids = test_encoding['input_ids']
         test_attention_mask = test_encoding['attention_mask']
 
@@ -231,25 +232,27 @@ class FirstModuleTDA():
             def tracked_modules(self) -> Optional[List[str]]:
                 # These are the module names we will use to compute influence functions.
                 return ["0", "2", "4", "6"]
+            
+        out = "../../output/IF_scores/"    
         task = ClassificationTask()
         model = prepare_model(model, task)
         analyzer = Analyzer(
-                    analysis_name="classification",
+                    analysis_name="hatebert",
                     model=model,
                     task=task,
                     cpu=True,
                 )
         
         analyzer.fit_all_factors(
-                    factors_name="classification_factor",
+                    factors_name="hatebert_factor",
                     dataset=self.train_texts,
                     per_device_batch_size=None,
                     overwrite_output_dir=True,
                 )
         
         analyzer.compute_pairwise_scores(
-                    scores_name="classification_score",
-                    factors_name="classification_factor",
+                    scores_name="hatebert_score",
+                    factors_name="hatebert_factor",
                     query_dataset=self.test_texts,
                     train_dataset=self.train_texts,
                     per_device_query_batch_size=len(self.test_texts),
@@ -264,7 +267,7 @@ class FirstModuleTDA():
         def process_batch(batch):
             return batch['input_ids'], batch['token_type_ids'], batch['attention_mask'], batch['labels']
 
-        out = PATH + "/output"
+        out = "../../output/TRAK_scores/"
 
         device = 'cuda'
         model = self.model.to(device)
