@@ -5,7 +5,7 @@ from transformers import BertForSequenceClassification, BertTokenizer
 
 def main():
 
-    PATH_TO_DATA = "../../data/toxigen/"
+    PATH_TO_DATA = "../../../data/toxigen/"
 
     annotated_train, annotated_test = utils.prepare_datasets()
    # model = BertForSequenceClassification.from_pretrained(config.MODEL_NAME)
@@ -21,7 +21,7 @@ def main():
    # first_module_baseline.get_gradient_scores()
 
     model = BertForSequenceClassification.from_pretrained(config.BASE_MODEL_NAME,num_labels = 2)
-    finetune_model(annotated_train, annotated_test,model, tokenizer,"../../output/base_model_finetuning/")
+    finetune_model(annotated_train, annotated_test,model, tokenizer,"../../../output/base_model_finetuning/")
 
 
 
