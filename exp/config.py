@@ -10,12 +10,13 @@ RANDOM_STATE = 42
 
 # Training parameters
 BATCH_SIZE = 32
-LEARNING_RATE = 2e-5
+LEARNING_RATE = 1e-5
 NUM_EPOCHS = 10
+WEIGHT_DECAY = 0.01
 
-NUM_CHECKPOINTS_TO_KEEP = 10
-CHECKPOINT_DIR = 'checkpoints'
-CHECKPOINT_PREFIX = 'model_checkpoint_'
+#NUM_CHECKPOINTS_TO_KEEP = 20
+#CHECKPOINT_DIR = 'checkpoints'
+#CHECKPOINT_PREFIX = 'model_checkpoint_'
 
 # Device
 #DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'

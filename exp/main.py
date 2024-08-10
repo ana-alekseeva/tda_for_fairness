@@ -1,31 +1,93 @@
 import utils
 import config
 from finetune import finetune_model
-from transformers import BertForSequenceClassification, BertTokenizer
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import torch
+import os
+import datasets_prep as dp
+import pandas as pd
 
 def main():
 
-    PATH_TO_DATA = "../../../data/toxigen/"
+    PATH_TO_DATA = "../../data/toxigen/"
+    dp.prepare_toxigen(PATH_TO_DATA)
 
-    annotated_train, annotated_test = utils.prepare_datasets()
-   # model = BertForSequenceClassification.from_pretrained(config.MODEL_NAME)
-    tokenizer = BertTokenizer.from_pretrained(config.TOKENIZER_NAME)
+    DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-   # train_dataloader = utils.get_dataloader(annotated_train, config.tokenizer, config.MAX_LENGTH, config.BATCH_SIZE)
-   # val_dataloader = utils.get_dataloader(annotated_test, config.tokenizer, config.MAX_LENGTH, config.BATCH_SIZE)
+    train_text = pd.read_csv(PATH_TO_DATA + "train.csv")["text"].to_list()
+    val_text = pd.read_csv(PATH_TO_DATA + "val.csv")["text"].to_list()
+    test_text = pd.read_csv(PATH_TO_DATA + "test.csv")["text"].to_list()
 
-   # first_module_baseline = utils.FirstModuleBaseline()
+    train_group_indices = pd.read_csv(PATH_TO_DATA + "train.csv")['target_group'].astype('category').cat.codes.tolist()
+    val_group_indices =pd.read_csv(PATH_TO_DATA + "val.csv")['target_group'].astype('category').cat.codes.tolist()
+    test_group_indices =pd.read_csv(PATH_TO_DATA + "test.csv")['target_group'].astype('category').cat.codes.tolist()
 
-   # first_module_baseline.get_Bm25_scores()
-   # first_module_baseline.get_FAISS_scores()
-   # first_module_baseline.get_gradient_scores()
 
-    model = BertForSequenceClassification.from_pretrained(config.BASE_MODEL_NAME,num_labels = 2)
-    finetune_model(annotated_train, annotated_test,model, tokenizer,"../../../output/base_model_finetuning/")
+    train_dataset = dp.get_toxigen_dataset("train")
+    val_dataset = dp.get_toxigen_dataset("val")
+    test_dataset = dp.get_toxigen_dataset("test")
+
+    train_dl = dp.get_dataloader(train_dataset, config.BATCH_SIZE)
+    val_dl = dp.get_dataloader(val_dataset, config.BATCH_SIZE)
+    test_dl = dp.get_dataloader(test_dataset, config.BATCH_SIZE)
+
+    # 1. Fine-tune a pretrained BERT on the toxigen dataset
+    #pretrained_model = AutoModelForSequenceClassification.from_pretrained(config.BASE_MODEL_NAME,num_labels = 2).to(DEVICE)
+    #finetune_model(annotated_train, annotated_test,pretrained_model, tokenizer,"../../output/base_model_finetuning/")
+    model_path = "../../output/base_model_finetuning/checkpoint-5600/"
+
+    # 2. Compute scores by using module 1
+
+
+    # Load fine-tuned on toxigen dataset
+    model = AutoModelForSequenceClassification.from_pretrained(model_path,num_labels = 2).to(DEVICE)
+    
+#    first_module_baseline = utils.FirstModuleBaseline(text_train, text_val, model_checkpoint, tokenizer)
+#    first_module_baseline.get_Bm25_scores()
+#    first_module_baseline.get_FAISS_scores()
+
+    first_module_tda = utils.FirstModuleTDA(train_dataset,test_dataset,model)
+    # first_module_tda.get_IF_scores(out="../../output/")
+
+    first_module_tda.get_TRAK_scores(out="../../output/")
+
+
+     # 3. Fine-tune models on the "debiased dataset"    
+
+#    for method in ["BM25","FAISS"]:  
+#        scores = torch.load(f"../../output/{method}_scores.pt")
+#        d3m = utils.D3M(
+#                model=model_checkpoint,
+#                checkpoints=[],
+#                train_dataloader=train_dataloader,
+#                val_dataloader = val_dataloader,
+#                group_indices_train=group_indices_train,
+#                group_indices_val=group_indices_val,
+#                scores=scores,
+#                train_set_size=None,
+#                val_set_size=None,
+#                device=DEVICE)
+#        
+#        for k in range(50,750,50):
+#            print(k)
+#            new_folder = f"../../output/{method}_finetuning/{k}"
+#            os.mkdir(new_folder)
+#            
+#            debiased_train_idx = d3m.debias(num_to_discard=k)
+#            finetune_model(annotated_train.iloc[debiased_train_idx,:], annotated_test,pretrained_model, tokenizer,new_folder)
+
+    #n = annotated_train.shape[0]
+    #for k in range(50,750,50):
+    #    print(k)
+    #    new_folder = f"../../output/random_finetuning/{k}"
+    #    os.mkdir(new_folder)
+        
+    #    finetune_model(annotated_train.sample(n-k), annotated_test,pretrained_model, tokenizer,new_folder)
+
+
+
 
 
 
 if __name__ == "__main__":
     main()
-
-

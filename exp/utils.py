@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, TensorDataset
 import os
 import torch
 from torch.nn import functional as F
@@ -13,12 +13,18 @@ from nltk.stem import PorterStemmer
 import faiss
 from kronfluence.analyzer import Analyzer, prepare_model
 from kronfluence.task import Task
+from kronfluence.utils.dataset import DataLoaderKwargs
+from kronfluence.arguments import FactorArguments, ScoreArguments
+from transformers import default_data_collator
 from typing import List, Optional, Tuple
 from torch import nn
 import math
+import config
+import datasets_prep as dp
 
 from tqdm import tqdm
 from trak import TRAKer
+
 
 
 
@@ -55,33 +61,6 @@ class TextClassificationDataset(Dataset):
             'labels': torch.tensor(label, dtype=torch.long)
         }
 
-def prepare_datasets(path_to_data="../../data/toxigen/"):
-    annotated_test = pd.read_csv(path_to_data+"annotated_test.csv")
-    annotated_train = pd.read_csv(path_to_data+"annotated_train.csv")
-
-    annotated_test["target_group"] = annotated_test["target_group"].replace('black folks / african-americans', 'black/african-american folks')
-    annotated_test['label'] = 1*(annotated_test['toxicity_human'] > 2)
-    annotated_train['label'] = 1*(annotated_train['toxicity_human'] > 2)
-
-    annotated_train["text"] = [i[2:] for i in annotated_train["text"]]
-    annotated_train = annotated_train.dropna(subset=["text","label"])
-    annotated_test = annotated_test.dropna(subset=["text","label"])
-    annotated_train = annotated_train.astype(str)
-    annotated_test = annotated_test.astype(str)
-
-    annotated_train["label"] = annotated_train["label"].replace({"hate":1,"neutral":0}).astype(int)
-    annotated_test["label"] = annotated_test["label"].astype(int)
-
-    return annotated_train, annotated_test
-
-def get_dataloader(data, tokenizer, max_length, batch_size):
-
-    texts = data["text"].tolist()
-    labels = data['label'].to_list()
-    dataset = TextClassificationDataset(texts, labels, tokenizer, max_length)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-
-    return dataloader
 
 
 class FirstModuleBaseline():
@@ -95,13 +74,21 @@ class FirstModuleBaseline():
         # Set model to evaluation mode
         self.model.eval()
 
-        inputs = self.tokenizer(texts, return_tensors="pt", padding=True, truncation=True, max_length=128)
-        # Get the model's output
-        with torch.no_grad():
-            outputs = self.model(**inputs, output_hidden_states=True)
-        # Extract the hidden states 
-        hidden_states = outputs.hidden_states
-        return hidden_states[-1][:, 0, :]
+        embeddings = []
+        for i in range(0,len(texts),config.BATCH_SIZE):
+            try:
+                batch = texts[i:i+config.BATCH_SIZE]
+            except:
+                batch = texts[i:]
+            # Get the model's output
+            with torch.no_grad():
+                inputs = self.tokenizer(batch, return_tensors="pt", padding=True, truncation=True, max_length=config.MAX_LENGTH).to("cuda")
+                outputs = self.model(**inputs, output_hidden_states=True)
+            # Extract the hidden states 
+            hidden_states = outputs.hidden_states
+            embeddings.append(hidden_states[-1][:, 0, :])
+
+        return torch.vstack(embeddings)
 
 
     def get_Bm25_scores(self):
@@ -133,11 +120,14 @@ class FirstModuleBaseline():
         test_texts_preprocessed = preprocessing(self.test_texts)
 
         bm25 = BM25Okapi(train_texts_preprocessed)
-
-        return torch.from_numpy(
+        scores = torch.from_numpy(
                 np.vstack(
                     [bm25.get_scores(query) for query in test_texts_preprocessed],
                 ))
+        
+        # normalize scores
+        scores = scores / scores.sum(axis=1,keepdims = True)
+        torch.save(scores, '../../output/BM25_scores.pt')
 
     def get_FAISS_scores(self):
 
@@ -155,152 +145,231 @@ class FirstModuleBaseline():
         # Compute similarities
         scores, _ = index.search(test_embeddings, n_train)
         
-        return scores
+        torch.save(scores, '../../output/FAISS_scores.pt')
 
     def get_gradient_scores(self,val_labels):
         
         # Set the model to evaluation mode and enable gradient computation
-        self.model.eval()
-        self.model.zero_grad()
 
         # Prepare the training sample
-        train_encoding = self.tokenizer(self.train_texts, return_tensors='pt', padding=True, truncation=True, max_length=128)
-        train_input_ids = train_encoding['input_ids']
-        train_attention_mask = train_encoding['attention_mask']
+        train_encoding = self.tokenizer(self.train_texts["text"].to_list(), return_tensors='pt', padding=True, truncation=True, max_length=config.MAX_LENGTH)
+        train_labels = self.train_texts['label'].to_list()
+        #train_input_ids = train_encoding['input_ids']
+        #train_attention_mask = train_encoding['attention_mask']
 
         # Prepare the test sample
-        test_encoding = self.tokenizer(self.test_texts, return_tensors='pt', padding=True, truncation=True, max_length=128)
-        test_input_ids = test_encoding['input_ids']
-        test_attention_mask = test_encoding['attention_mask']
+        #test_encoding = self.tokenizer(self.test_texts, return_tensors='pt', padding=True, truncation=True, max_length=config.MAX_LENGTH)
+        #test_input_ids = test_encoding['input_ids']
+        #test_attention_mask = test_encoding['attention_mask']
 
-        # Enable gradient computation for the training sample
-        train_input_ids.requires_grad_()
 
-        # Forward pass for the training sample
-        train_outputs = self.model(input_ids=train_input_ids, attention_mask=train_attention_mask)
-        train_logits = train_outputs.logits
+        train_dataset = TensorDataset(train_encoding['input_ids'], train_encoding['attention_mask'], torch.tensor(train_labels))
+        train_loader = DataLoader(train_dataset, batch_size=len(self.train_texts))  # Use all training samples in one batch
 
-        # Forward pass for the test sample
-        test_outputs = self.model(input_ids=test_input_ids, attention_mask=test_attention_mask)
-        test_logits = test_outputs.logits
+        # Function to get sentence embeddings
+        def get_sentence_embedding(model, input_ids, attention_mask):
+            with torch.no_grad():
+                outputs = model.bert(input_ids=input_ids, attention_mask=attention_mask)
+            return outputs.last_hidden_state[:, 0, :]  # Use [CLS] token embedding
 
-        # Compute the loss for the test sample
-        loss_fn = torch.nn.CrossEntropyLoss()
-        test_loss = loss_fn(test_logits, val_labels)
+        # Compute sentence embeddings for all training samples
+        self.model.eval()
+        for batch in train_loader:
+            train_input_ids, train_attention_mask, _ = batch
+            train_embeddings = get_sentence_embedding(self.model, train_input_ids, train_attention_mask)
 
-        # Compute gradients of the test loss with respect to the training logits
-        test_loss.backward()
+        # Enable gradient computation for train embeddings
+        train_embeddings.requires_grad_()
 
-        # The gradients are now stored in train_input_ids.grad
-        gradients = train_input_ids.grad
-        # You can also compute the gradient norm if needed
-        #gradient_norm = torch.norm(gradients)
+        for test_sample, test_label in zip(self.test_texts["text"], self.test_texts["label"]):
+        # Compute loss for test sample
+            test_encoding = self.tokenizer(test_sample, return_tensors='pt', padding=True, truncation=True, max_length=config.MAX_LENGTH)
+            test_input_ids = test_encoding['input_ids']
+            test_attention_mask = test_encoding['attention_mask']
 
+            # Forward pass
+            outputs = self.model(input_ids=test_input_ids, attention_mask=test_attention_mask, labels=torch.tensor([test_label]))
+            loss = outputs.loss
+
+            # Compute gradients
+            loss.backward()
+
+            # The gradients are now stored in train_embeddings.grad
+            gradients = train_embeddings.grad
+            break
+        return gradients
+
+        #scores = ...
+        #torch.save(scores, '../../output/gradients_scores.pt')
 
 class FirstModuleTDA():
-    def __init__(self,train_texts, test_texts,model,tokenizer):
-        self.train_dataloader = train_texts
-        self.test_dataloader = test_texts
-        self.model = model
-        self.tokenizer = tokenizer        
+    def __init__(self,train_dataset,val_dataset,model):
+        self.train_dataset = train_dataset
+        self.val_dataset = val_dataset
+        self.model = model.to("cuda")      
 
-    def get_IF_scores(self):
-        class ClassificationTask(Task):
+    def get_IF_scores(self,out):
+
+        class TextClassificationTask(Task):
             def compute_train_loss(
                 self,
-                batch: Tuple[torch.Tensor, torch.Tensor],
+                batch,
                 model: nn.Module,
                 sample: bool = False,
             ) -> torch.Tensor:
-                inputs, targets = batch
-                outputs = model(inputs)
+                logits = model(
+                    input_ids=batch["input_ids"],
+                    attention_mask=batch["attention_mask"],
+                    token_type_ids=batch["token_type_ids"],
+                ).logits
                 if not sample:
-                    return F.cross_entropy(outputs, targets)
-                # Sample the outputs from the model's prediction for true Fisher.
+                    return F.cross_entropy(logits, batch["labels"], reduction="sum")
                 with torch.no_grad():
-                    sampled_targets = torch.normal(outputs, std=math.sqrt(0.5))
-                return F.cross_entropy(outputs, sampled_targets.detach())
+                    probs = torch.nn.functional.softmax(logits.detach(), dim=-1)
+                    sampled_labels = torch.multinomial(
+                        probs,
+                        num_samples=1,
+                    ).flatten()
+                return F.cross_entropy(logits, sampled_labels, reduction="sum")
 
             def compute_measurement(
                 self,
-                batch: Tuple[torch.Tensor, torch.Tensor],
+                batch,
                 model: nn.Module,
             ) -> torch.Tensor:
-                # The measurement function is set as a training loss.
-                return self.compute_train_loss(batch, model, sample=False)
+                # Copied from: https://github.com/MadryLab/trak/blob/main/trak/modelout_functions.py.
+                logits = model(
+                    input_ids=batch["input_ids"],
+                    attention_mask=batch["attention_mask"],
+                    token_type_ids=batch["token_type_ids"],
+                ).logits
+
+                labels = batch["labels"]
+                bindex = torch.arange(logits.shape[0]).to(device=logits.device, non_blocking=False)
+                logits_correct = logits[bindex, labels]
+
+                cloned_logits = logits.clone()
+                cloned_logits[bindex, labels] = torch.tensor(-torch.inf, device=logits.device, dtype=logits.dtype)
+
+                margins = logits_correct - cloned_logits.logsumexp(dim=-1)
+                return -margins.sum()
+
+            def get_attention_mask(self, batch) -> torch.Tensor:
+                return batch["attention_mask"]
+            
 
             def tracked_modules(self) -> Optional[List[str]]:
                 # These are the module names we will use to compute influence functions.
-                return ["0", "2", "4", "6"]
-            
-        out = "../../output/IF_scores/"    
-        task = ClassificationTask()
-        model = prepare_model(model, task)
+                return ["classifier"]
+               
+        task = TextClassificationTask()
+        model = prepare_model(self.model, task)
+
+
         analyzer = Analyzer(
-                    analysis_name="hatebert",
-                    model=model,
-                    task=task,
-                    cpu=True,
-                )
+            analysis_name="toxigen_bert",
+            model=model,
+            task=task,
+            profile=False,
+        )
         
-        analyzer.fit_all_factors(
-                    factors_name="hatebert_factor",
-                    dataset=self.train_texts,
-                    per_device_batch_size=None,
-                    overwrite_output_dir=True,
-                )
-        
+        # Configure parameters for DataLoader.
+        dataloader_kwargs = DataLoaderKwargs(collate_fn=default_data_collator)
+        analyzer.set_dataloader_kwargs(dataloader_kwargs)
+
+        if not os.path.isdir("influence_results"):
+            analyzer.fit_all_factors(
+                        factors_name="ekfac",
+                        dataset=self.train_dataset,
+                        per_device_batch_size=config.BATCH_SIZE,
+                        overwrite_output_dir=True,
+                    )
+
+
+        # Compute influence factors.
+        factors_name = "ekfac"
+        factor_args = FactorArguments(strategy="ekfac")
+
+        # Compute pairwise scores.
+        score_args = ScoreArguments()
+        scores_name = factor_args.strategy
+
         analyzer.compute_pairwise_scores(
-                    scores_name="hatebert_score",
-                    factors_name="hatebert_factor",
-                    query_dataset=self.test_texts,
-                    train_dataset=self.train_texts,
-                    per_device_query_batch_size=len(self.test_texts),
-                    overwrite_output_dir=True,
-                )
-        scores = analyzer.load_pairwise_scores(scores_name="classification_score")['all_modules']
+            score_args=score_args,
+            scores_name=scores_name,
+            factors_name=factors_name,
+            query_dataset=self.val_dataset,
+            #query_indices=list(range(min([len(self.val_dataset), 2000]))),
+            train_dataset=self.train_dataset,
+            per_device_query_batch_size=8,
+            per_device_train_batch_size=8,
+            overwrite_output_dir=False,
+        )
+        scores = analyzer.load_pairwise_scores(scores_name)["all_modules"]
+        # analyzer = Analyzer(
+        #             analysis_name="bert",
+        #             model=model,
+        #             task=task,
+        #             cpu=False,
+        #         )
+        
+        # analyzer.fit_all_factors(
+        #             factors_name="bert_factor",
+        #             dataset=self.train_dataset,
+        #             per_device_batch_size=32,
+        #             overwrite_output_dir=True,
+        #         )
+        
+        # analyzer.compute_pairwise_scores(
+        #             scores_name="bert_score",
+        #             factors_name="bert_factor",
+        #             query_dataset=self.val_dataset,
+        #             train_dataset=self.train_dataset,
+        #             per_device_query_batch_size=32,
+        #             overwrite_output_dir=True,
+        #         )
+        # scores = analyzer.load_pairwise_scores(scores_name="classification_score")['all_modules']
 
-        return scores
+        torch.save(scores, '../../output/IF_scores.pt')
 
-    def get_TRAK_scores(self):
+    def get_TRAK_scores(self,out):
 
         def process_batch(batch):
             return batch['input_ids'], batch['token_type_ids'], batch['attention_mask'], batch['labels']
 
-        out = "../../output/TRAK_scores/"
-
         device = 'cuda'
         model = self.model.to(device)
+        train_dataloader = dp.get_dataloader(self.train_dataset, 8)
+        val_dataloader = dp.get_dataloader(self.val_dataset, 8)
 
         traker = TRAKer(model=self.model,
-                        task='text_classification',
-                        train_set_size=TRAIN_SET_SIZE,
+                        task="text_classification",
+                        train_set_size=self.train_dataset.num_rows,
                         save_dir=out,
                         device=device,
-                        proj_dim=1024)
+                        proj_dim= 128) #1024)
 
-        traker.load_checkpoint(self.model.state_dict(), model_id=0)
-        for batch in tqdm(self.train_dataloader, desc='Featurizing..'):
+        traker.load_checkpoint(model.state_dict(), model_id=0)
+        for batch in tqdm(train_dataloader, desc='Featurizing..'):
             # process batch into compatible form for TRAKer TextClassificationModelOutput
             batch = process_batch(batch)
-            batch = [x.cuda() for x in batch]
+            batch = [x.to(device) for x in batch]
             traker.featurize(batch=batch, num_samples=batch[0].shape[0])
 
         traker.finalize_features()
 
-        traker.start_scoring_checkpoint(exp_name='text_classification',
+        traker.start_scoring_checkpoint(exp_name='toxigen_bert',
                                         checkpoint=model.state_dict(),
                                         model_id=0,
-                                        num_targets=VAL_SET_SIZE)
+                                        num_targets=self.val_dataset.num_rows)
         
-        for batch in tqdm(self.test_dataloader, desc='Scoring..'):
+        for batch in tqdm(val_dataloader, desc='Scoring..'):
             batch = process_batch(batch)
             batch = [x.cuda() for x in batch]
             traker.score(batch=batch, num_samples=batch[0].shape[0])
 
-        scores = traker.finalize_scores(exp_name='text_classification')
-
-        return scores
+        scores = traker.finalize_scores(exp_name='toxigen_bert')
+        torch.save(scores, '../../output/TRAK_scores.pt')
 
 
 
@@ -350,7 +419,7 @@ class D3M:
             device (optional):
                 pytorch device
         """
-        self.model = model
+        self.model = model.to(device)
         self.checkpoints = checkpoints
         self.dataloaders = {"train": train_dataloader, "val": val_dataloader}
         self.group_indices_train = group_indices_train
@@ -365,6 +434,7 @@ class D3M:
         with torch.no_grad():
             #for inputs, labels in val_dl:
             for batch in val_dl:
+                batch = {k: batch[k].to(self.device) for k in  batch.keys()}
                 labels = batch["labels"]
 
                 outputs = model(**batch)["logits"]
@@ -465,3 +535,17 @@ class D3M:
 
         return debiased_train_inds
 
+def compute_accuracy(model, dataloader, device):
+    predictions = []
+    true_labels = []
+
+    with torch.no_grad():
+        for batch in dataloader:
+            batch = {k:batch[k].to(device) for k in batch.keys()}
+            outputs = model(**batch)
+            logits = outputs.logits
+            pred = torch.argmax(logits, dim=1).cpu().numpy()
+            predictions.extend(pred)
+            true_labels.extend(batch['labels'].cpu().numpy())
+
+    return sum(np.array(true_labels) == np.array(predictions) ) / len(predictions)
