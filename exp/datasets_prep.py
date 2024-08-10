@@ -5,6 +5,7 @@ import config
 from transformers import AutoTokenizer
 from torch.utils.data import DataLoader
 import os
+import torch
 
 
 def prepare_toxigen(path_to_data="../../data/toxigen/",test_samples_per_group = 10):
@@ -92,10 +93,13 @@ def get_toxigen_dataset(
 
     if indices is not None:
         ds = ds.select(indices)
-
     return ds
 
-
-
 def get_dataloader(dataset, batch_size):
-    return DataLoader(dataset, batch_size=batch_size, shuffle=False)
+    def collate_fn(batch):
+        return {
+            'input_ids': torch.tensor([item['input_ids'] for item in batch]),
+            'attention_mask': torch.tensor([item['attention_mask'] for item in batch]),
+            'labels': torch.tensor([item['labels'] for item in batch]),
+        }
+    return DataLoader(dataset, batch_size=batch_size, shuffle=False,collate_fn=collate_fn)

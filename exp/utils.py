@@ -376,11 +376,10 @@ class D3M:
         with torch.no_grad():
             #for inputs, labels in val_dl:
             for batch in val_dl:
-                labels = batch["labels"]
-
+                batch = {k:batch[k].to(self.device) for k in batch.keys()}
                 outputs = model(**batch)["logits"]
                 loss = F.cross_entropy(
-                    outputs, labels.to(self.device), reduction="none"
+                    outputs, batch["labels"], reduction="none"
                 )
                 losses.append(loss)
         losses = torch.cat(losses)
@@ -482,7 +481,7 @@ def compute_accuracy(model, dataloader, device):
 
     with torch.no_grad():
         for batch in dataloader:
-            #batch = {k:batch[k].to(device) for k in batch.keys()}
+            batch = {k:batch[k].to(device) for k in batch.keys()}
             outputs = model(**batch.to(device))
             logits = outputs.logits
             pred = torch.argmax(logits, dim=1).cpu().numpy()
