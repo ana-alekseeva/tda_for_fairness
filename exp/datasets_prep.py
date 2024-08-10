@@ -7,25 +7,28 @@ from torch.utils.data import DataLoader
 import os
 
 
-def prepare_toxigen(path_to_data="../../data/toxigen/"):
+def prepare_toxigen(path_to_data="../../data/toxigen/",test_samples_per_group = 10):
 
     if not os.path.exists(path_to_data + "val.csv") or not os.path.exists(path_to_data + "train.csv"):
+
         val_df = pd.read_csv(path_to_data+"annotated_test.csv") 
         train_df = pd.read_csv(path_to_data+"annotated_train.csv") 
+        print(train_df.shape)
 
         val_df["target_group"] = val_df["target_group"].replace('black folks / african-americans', 'black/african-american folks')
         val_df['label'] = 1*(val_df['toxicity_human'] > 2)
         train_df['label'] = 1*(train_df['toxicity_human'] > 2)
 
+        train_df = train_df.dropna(subset=["text","label","target_group"])
+        val_df = val_df.dropna(subset=["text","label","target_group"])
         train_df["text"] = [i[2:-1] for i in train_df["text"]]
-        train_df = train_df.dropna(subset=["text","label"])
-        val_df = val_df.dropna(subset=["text","label"])
-        train_df = train_df.astype(str)
-        val_df = val_df.astype(str)
+
+        train_df = train_df.loc[train_df["text"].str.len() != 0]
+        val_df = val_df.loc[val_df["text"].str.len() != 0]
 
         train_df["label"] = train_df["label"].replace({"hate":1,"neutral":0}).astype(int)
         val_df["label"] = val_df["label"].astype(int)
-        
+
         train_df = train_df.loc[:,["text","label","target_group"]]
         val_df = val_df.loc[:,["text","label","target_group"]]
 
@@ -40,8 +43,12 @@ def prepare_toxigen(path_to_data="../../data/toxigen/"):
         test_df["label"] = test_df["binary_prompt_label"]
         test_df = test_df.drop("binary_prompt_label",axis=1).loc[:,["text","label","target_group"]]
 
-        test_df = test_df.groupby('target_group', group_keys=False).apply(lambda x: x.sample(10))
         test_df["text"] = [i[2:-1] for i in test_df["text"]]
+        test_df = test_df.dropna(subset=["text","label","target_group"])
+        test_df = test_df.loc[test_df["text"].str.len() != 0]
+
+        test_df = test_df.groupby('target_group', group_keys=False).apply(lambda x: x.sample(test_samples_per_group))
+        
         test_df.to_csv(path_to_data+"test.csv", index=False)
 
 

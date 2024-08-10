@@ -10,7 +10,7 @@ import pandas as pd
 def main():
 
     PATH_TO_DATA = "../../data/toxigen/"
-    dp.prepare_toxigen(PATH_TO_DATA)
+    dp.prepare_toxigen(PATH_TO_DATA,config.TEST_SAMPLES_PER_GROUP)
 
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -38,43 +38,43 @@ def main():
 
     # 2. Compute scores by using module 1
 
-
     # Load fine-tuned on toxigen dataset
     model = AutoModelForSequenceClassification.from_pretrained(model_path,num_labels = 2).to(DEVICE)
+    tokenizer = AutoTokenizer.from_pretrained(config.TOKENIZER_NAME, use_fast=True, trust_remote_code=True)
     
-#    first_module_baseline = utils.FirstModuleBaseline(text_train, text_val, model_checkpoint, tokenizer)
-#    first_module_baseline.get_Bm25_scores()
-#    first_module_baseline.get_FAISS_scores()
+    first_module_baseline = utils.FirstModuleBaseline(train_text, test_text, model, tokenizer)
+    first_module_baseline.get_Bm25_scores()
+    first_module_baseline.get_FAISS_scores()
 
-    first_module_tda = utils.FirstModuleTDA(train_dataset,test_dataset,model)
-    # first_module_tda.get_IF_scores(out="../../output/")
+    #first_module_tda = utils.FirstModuleTDA(train_dataset,test_dataset,model)
+    #first_module_tda.get_IF_scores(out="../../output/")
 
-    first_module_tda.get_TRAK_scores(out="../../output/")
+    #first_module_tda.get_TRAK_scores(out="../../output/")
 
 
      # 3. Fine-tune models on the "debiased dataset"    
 
-#    for method in ["BM25","FAISS"]:  
-#        scores = torch.load(f"../../output/{method}_scores.pt")
-#        d3m = utils.D3M(
-#                model=model_checkpoint,
-#                checkpoints=[],
-#                train_dataloader=train_dataloader,
-#                val_dataloader = val_dataloader,
-#                group_indices_train=group_indices_train,
-#                group_indices_val=group_indices_val,
-#                scores=scores,
-#                train_set_size=None,
-#                val_set_size=None,
-#                device=DEVICE)
-#        
-#        for k in range(50,750,50):
-#            print(k)
-#            new_folder = f"../../output/{method}_finetuning/{k}"
-#            os.mkdir(new_folder)
-#            
-#            debiased_train_idx = d3m.debias(num_to_discard=k)
-#            finetune_model(annotated_train.iloc[debiased_train_idx,:], annotated_test,pretrained_model, tokenizer,new_folder)
+    for method in ["BM25","FAISS","IF"]:  
+        scores = torch.load(f"../../output/{method}_scores.pt")
+        d3m = utils.D3M(
+                model=model,
+                checkpoints=[],
+                train_dataloader=train_dl,
+                val_dataloader = test_dl,
+                group_indices_train=train_group_indices,
+                group_indices_val=test_group_indices,
+                scores=scores,
+                train_set_size=None,
+                val_set_size=None,
+                device=DEVICE)
+        
+        for k in range(50,750,50):
+            print(k)
+            new_folder = f"../../output/{method}_finetuning/{k}"
+            os.mkdir(new_folder)
+            
+            debiased_train_idx = d3m.debias(num_to_discard=k)
+            finetune_model(train_dataset.select(debiased_train_idx), val_dataset,model, tokenizer,new_folder)
 
     #n = annotated_train.shape[0]
     #for k in range(50,750,50):

@@ -3,6 +3,8 @@ BASE_MODEL_NAME = 'bert-base-uncased'
 MODEL_NAME = 'tomh/toxigen_hatebert'
 TOKENIZER_NAME = 'bert-base-uncased'
 
+TEST_SAMPLES_PER_GROUP = 20
+
 # Data parameters
 MAX_LENGTH = 128
 TEST_SIZE = 0.2

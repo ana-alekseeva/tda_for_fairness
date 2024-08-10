@@ -28,41 +28,6 @@ from trak import TRAKer
 
 
 
-
-class TextClassificationDataset(Dataset):
-    def __init__(self, texts, labels, tokenizer, max_length):
-        self.texts = texts
-        self.labels = labels
-        self.tokenizer = tokenizer
-        self.max_length = max_length
-
-    def __len__(self):
-        return len(self.texts)
-
-    def __getitem__(self, idx):
-        text = self.texts[idx]
-        label = self.labels[idx]
-
-        encoding = self.tokenizer.encode_plus(
-            text,
-            add_special_tokens=True,
-            max_length=self.max_length,
-            return_token_type_ids=True,
-            padding='max_length',
-            truncation=True,
-            return_attention_mask=True,
-            return_tensors='pt',
-        )
-
-        return {
-            'input_ids': encoding['input_ids'].flatten(),
-            'attention_mask': encoding['attention_mask'].flatten(),
-            'token_type_ids': encoding['token_type_ids'].flatten(),
-            'labels': torch.tensor(label, dtype=torch.long)
-        }
-
-
-
 class FirstModuleBaseline():
     def __init__(self,train_texts, test_texts,model, tokenizer):
         self.train_texts = train_texts
@@ -203,9 +168,9 @@ class FirstModuleBaseline():
         #torch.save(scores, '../../output/gradients_scores.pt')
 
 class FirstModuleTDA():
-    def __init__(self,train_dataset,val_dataset,model):
+    def __init__(self,train_dataset,test_dataset,model):
         self.train_dataset = train_dataset
-        self.val_dataset = val_dataset
+        self.test_dataset = test_dataset
         self.model = model.to("cuda")      
 
     def get_IF_scores(self,out):
@@ -277,13 +242,12 @@ class FirstModuleTDA():
         dataloader_kwargs = DataLoaderKwargs(collate_fn=default_data_collator)
         analyzer.set_dataloader_kwargs(dataloader_kwargs)
 
-        if not os.path.isdir("influence_results"):
-            analyzer.fit_all_factors(
-                        factors_name="ekfac",
-                        dataset=self.train_dataset,
-                        per_device_batch_size=config.BATCH_SIZE,
-                        overwrite_output_dir=True,
-                    )
+        analyzer.fit_all_factors(
+                    factors_name="ekfac",
+                    dataset=self.train_dataset,
+                    per_device_batch_size=config.BATCH_SIZE,
+                    overwrite_output_dir=True,
+                )
 
 
         # Compute influence factors.
@@ -298,7 +262,7 @@ class FirstModuleTDA():
             score_args=score_args,
             scores_name=scores_name,
             factors_name=factors_name,
-            query_dataset=self.val_dataset,
+            query_dataset=self.test_dataset,
             #query_indices=list(range(min([len(self.val_dataset), 2000]))),
             train_dataset=self.train_dataset,
             per_device_query_batch_size=8,
@@ -306,29 +270,7 @@ class FirstModuleTDA():
             overwrite_output_dir=False,
         )
         scores = analyzer.load_pairwise_scores(scores_name)["all_modules"]
-        # analyzer = Analyzer(
-        #             analysis_name="bert",
-        #             model=model,
-        #             task=task,
-        #             cpu=False,
-        #         )
-        
-        # analyzer.fit_all_factors(
-        #             factors_name="bert_factor",
-        #             dataset=self.train_dataset,
-        #             per_device_batch_size=32,
-        #             overwrite_output_dir=True,
-        #         )
-        
-        # analyzer.compute_pairwise_scores(
-        #             scores_name="bert_score",
-        #             factors_name="bert_factor",
-        #             query_dataset=self.val_dataset,
-        #             train_dataset=self.train_dataset,
-        #             per_device_query_batch_size=32,
-        #             overwrite_output_dir=True,
-        #         )
-        # scores = analyzer.load_pairwise_scores(scores_name="classification_score")['all_modules']
+
 
         torch.save(scores, '../../output/IF_scores.pt')
 
@@ -340,7 +282,7 @@ class FirstModuleTDA():
         device = 'cuda'
         model = self.model.to(device)
         train_dataloader = dp.get_dataloader(self.train_dataset, 8)
-        val_dataloader = dp.get_dataloader(self.val_dataset, 8)
+        test_dataloader = dp.get_dataloader(self.test_dataset, 8)
 
         traker = TRAKer(model=self.model,
                         task="text_classification",
@@ -363,7 +305,7 @@ class FirstModuleTDA():
                                         model_id=0,
                                         num_targets=self.val_dataset.num_rows)
         
-        for batch in tqdm(val_dataloader, desc='Scoring..'):
+        for batch in tqdm(test_dataloader, desc='Scoring..'):
             batch = process_batch(batch)
             batch = [x.cuda() for x in batch]
             traker.score(batch=batch, num_samples=batch[0].shape[0])
