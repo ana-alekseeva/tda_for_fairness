@@ -25,7 +25,6 @@ def finetune_model(train_dataset,val_dataset,model, tokenizer,output_dir):
     # This is needed because the sentences in the dataset have different lengths.
     data_collator = tf.DataCollatorWithPadding(tokenizer=tokenizer)
 
-    # We use the accuracy metric to evaluate the model, since the task is classification.
     accuracy = ev.load("accuracy")
     def compute_metrics(eval_pred):
         predictions, labels = eval_pred
@@ -56,13 +55,9 @@ def finetune_model(train_dataset,val_dataset,model, tokenizer,output_dir):
         tokenizer=tokenizer,
         compute_metrics=compute_metrics,
     )
-    # A hack to stop the trainer from printing the results after each epoch.
-    # Relevant because we will retrain the model a lot in this notebook.
     trainer.remove_callback(tf.trainer_callback.PrinterCallback)
 
-    # Run the training.
     trainer.train()
-    # Set verbosity back to warning
     tf.logging.set_verbosity_warning()
 
    

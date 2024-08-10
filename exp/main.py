@@ -42,9 +42,9 @@ def main():
     model = AutoModelForSequenceClassification.from_pretrained(model_path,num_labels = 2).to(DEVICE)
     tokenizer = AutoTokenizer.from_pretrained(config.TOKENIZER_NAME, use_fast=True, trust_remote_code=True)
     
-    first_module_baseline = utils.FirstModuleBaseline(train_text, test_text, model, tokenizer)
-    first_module_baseline.get_Bm25_scores()
-    first_module_baseline.get_FAISS_scores()
+    #first_module_baseline = utils.FirstModuleBaseline(train_text, test_text, model, tokenizer)
+    #first_module_baseline.get_Bm25_scores()
+    #first_module_baseline.get_FAISS_scores()
 
     #first_module_tda = utils.FirstModuleTDA(train_dataset,test_dataset,model)
     #first_module_tda.get_IF_scores(out="../../output/")

@@ -70,7 +70,7 @@ def get_toxigen_dataset(
     def preprocess_function(examples):
         result = tokenizer(examples[text_column_name], padding="max_length", max_length=config.MAX_LENGTH, truncation=True)
         if "label" in examples:
-            result["label"] = examples["label"]
+            result["labels"] = examples["label"]
         return result
 
     raw_datasets = raw_datasets.map(
