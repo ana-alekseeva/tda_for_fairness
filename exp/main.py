@@ -32,7 +32,7 @@ def main():
     test_dl = dp.get_dataloader(test_dataset, config.BATCH_SIZE)
 
     # 1. Fine-tune a pretrained BERT on the toxigen dataset
-    #pretrained_model = AutoModelForSequenceClassification.from_pretrained(config.BASE_MODEL_NAME,num_labels = 2).to(DEVICE)
+    pretrained_model = AutoModelForSequenceClassification.from_pretrained(config.BASE_MODEL_NAME,num_labels = 2).to(DEVICE)
     #finetune_model(annotated_train, annotated_test,pretrained_model, tokenizer,"../../output/base_model_finetuning/")
     model_path = "../../output/base_model_finetuning/checkpoint-5600/"
 
@@ -74,7 +74,7 @@ def main():
             os.mkdir(new_folder)
             
             debiased_train_idx = d3m.debias(num_to_discard=k)
-            finetune_model(train_dataset.select(debiased_train_idx), val_dataset,model, tokenizer,new_folder)
+            finetune_model(train_dataset.select(debiased_train_idx), val_dataset,pretrained_model, tokenizer,new_folder)
 
     #n = annotated_train.shape[0]
     #for k in range(50,750,50):

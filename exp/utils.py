@@ -475,17 +475,30 @@ class D3M:
 
         return debiased_train_inds
 
-def compute_accuracy(model, dataloader, device):
+def compute_accuracy(model, dataloader, device="cuda"):
     predictions = []
     true_labels = []
 
     with torch.no_grad():
         for batch in dataloader:
             batch = {k:batch[k].to(device) for k in batch.keys()}
-            outputs = model(**batch.to(device))
+            outputs = model(**batch)
             logits = outputs.logits
             pred = torch.argmax(logits, dim=1).cpu().numpy()
             predictions.extend(pred)
             true_labels.extend(batch['labels'].cpu().numpy())
 
     return sum(np.array(true_labels) == np.array(predictions) ) / len(predictions)
+
+def compute_predictions(model, dataloader, device="cuda"):
+    predictions = []
+
+    with torch.no_grad():
+        for batch in dataloader:
+            batch = {k:batch[k].to(device) for k in batch.keys()}
+            outputs = model(**batch)
+            logits = outputs.logits
+            pred = torch.argmax(logits, dim=1).cpu().numpy()
+            predictions.extend(pred)
+
+    return predictions
