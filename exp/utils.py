@@ -289,7 +289,7 @@ class FirstModuleTDA():
                         train_set_size=self.train_dataset.num_rows,
                         save_dir=out,
                         device=device,
-                        proj_dim= 128) #1024)
+                        proj_dim= 1024) 
 
         traker.load_checkpoint(model.state_dict(), model_id=0)
         for batch in tqdm(train_dataloader, desc='Featurizing..'):
