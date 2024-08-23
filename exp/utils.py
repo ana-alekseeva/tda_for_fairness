@@ -21,11 +21,45 @@ from torch import nn
 import math
 import config
 import datasets_prep as dp
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 from tqdm import tqdm
 from trak import TRAKer
 
 
+def plot_distr_by_group(df, title):
+    """
+    Plot the distribution of samples by group.
+    """
+    # Create a count of samples for each combination of label and target group
+    grouped_data = df.groupby(['target_group', 'label']).size().unstack()
+
+    # Set up the plot
+    plt.figure(figsize=(12, 6))
+
+    # Create the grouped bar plot
+    grouped_data.plot(kind='bar', ax=plt.gca())
+
+    # Customize the plot
+    plt.title('Distribution of Labels by Group')
+    plt.xlabel('Group')
+    plt.ylabel('Number of Samples')
+    plt.legend(['Neutral (0)', 'Hate (1)'])
+
+    # Rotate x-axis labels for better readability
+    plt.xticks(rotation=45)
+
+    # Add value labels on top of each bar
+    for i in range(len(grouped_data)):
+        for j in range(len(grouped_data.columns)):
+            value = grouped_data.iloc[i, j]
+            plt.text(i, value, str(value), ha='center', va='bottom')
+
+    # Adjust layout to prevent cutoff
+    plt.tight_layout()
+    plt.savefig(f'../vis/distr_by_group_{title}.png', dpi=300, bbox_inches='tight')
 
 
 class FirstModuleBaseline():

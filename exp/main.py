@@ -6,6 +6,7 @@ import torch
 import os
 import datasets_prep as dp
 import pandas as pd
+import random
 
 def main():
 
@@ -14,13 +15,21 @@ def main():
 
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    train_text = pd.read_csv(PATH_TO_DATA + "train.csv")["text"].to_list()
-    val_text = pd.read_csv(PATH_TO_DATA + "val.csv")["text"].to_list()
-    test_text = pd.read_csv(PATH_TO_DATA + "test.csv")["text"].to_list()
+    train_df = pd.read_csv(PATH_TO_DATA + "train.csv")
+    val_df = pd.read_csv(PATH_TO_DATA + "val.csv")
+    test_df = pd.read_csv(PATH_TO_DATA + "test.csv")
 
-    train_group_indices = pd.read_csv(PATH_TO_DATA + "train.csv")['target_group'].astype('category').cat.codes.tolist()
-    val_group_indices =pd.read_csv(PATH_TO_DATA + "val.csv")['target_group'].astype('category').cat.codes.tolist()
-    test_group_indices =pd.read_csv(PATH_TO_DATA + "test.csv")['target_group'].astype('category').cat.codes.tolist()
+    utils.plot_distr_by_group(train_df, "train")
+    utils.plot_distr_by_group(val_df, "val")
+    utils.plot_distr_by_group(test_df, "test")
+
+    train_text = train_df["text"].to_list()
+    val_text = val_df["text"].to_list()
+    test_text = test_df["text"].to_list()
+
+    train_group_indices = train_df['target_group'].astype('category').cat.codes.tolist()
+    val_group_indices = val_df['target_group'].astype('category').cat.codes.tolist()
+    test_group_indices = test_df['target_group'].astype('category').cat.codes.tolist()
 
 
     train_dataset = dp.get_toxigen_dataset("train")
@@ -38,16 +47,16 @@ def main():
 
     # 2. Compute scores by using module 1
 
-    # Load fine-tuned on toxigen dataset
+    # Load the model fine-tuned on toxigen dataset
     model = AutoModelForSequenceClassification.from_pretrained(model_path,num_labels = 2).to(DEVICE)
     tokenizer = AutoTokenizer.from_pretrained(config.TOKENIZER_NAME, use_fast=True, trust_remote_code=True)
     
-    #first_module_baseline = utils.FirstModuleBaseline(train_text, test_text, model, tokenizer)
-    #first_module_baseline.get_Bm25_scores()
-    #first_module_baseline.get_FAISS_scores()
+    first_module_baseline = utils.FirstModuleBaseline(train_text, test_text, model, tokenizer)
+    first_module_baseline.get_Bm25_scores()
+    first_module_baseline.get_FAISS_scores()
 
-    #first_module_tda = utils.FirstModuleTDA(train_dataset,test_dataset,model)
-    #first_module_tda.get_IF_scores(out="../../output/")
+    first_module_tda = utils.FirstModuleTDA(train_dataset,test_dataset,model)
+    first_module_tda.get_IF_scores(out="../../output/")
 
     #first_module_tda.get_TRAK_scores(out="../../output/")
 
@@ -76,17 +85,13 @@ def main():
             debiased_train_idx = d3m.debias(num_to_discard=k)
             finetune_model(train_dataset.select(debiased_train_idx), val_dataset,pretrained_model, tokenizer,new_folder)
 
-    #n = annotated_train.shape[0]
-    #for k in range(50,750,50):
-    #    print(k)
-    #    new_folder = f"../../output/random_finetuning/{k}"
-    #    os.mkdir(new_folder)
-        
-    #    finetune_model(annotated_train.sample(n-k), annotated_test,pretrained_model, tokenizer,new_folder)
-
-
-
-
+    n = train_df.shape[0]
+    for k in range(50,750,50):
+        print(k)
+        new_folder = f"../../output/random_finetuning/{k}"
+        os.mkdir(new_folder)
+        random_indices = random.sample(range(n), k)
+        finetune_model(train_dataset.select(), val_dataset,pretrained_model, tokenizer,new_folder)
 
 
 if __name__ == "__main__":
