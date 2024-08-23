@@ -18,6 +18,18 @@ def prepare_toxigen(path_to_data="../../data/toxigen/",test_samples_per_group = 
         train_df = train_df.loc[train_df["text"].str.len() != 0]
         train_df["label"] = train_df["label"].replace({"hate":1,"neutral":0}).astype(int)
         train_df = train_df.loc[:,["text","label","target_group"]]
+        # Introducing spurious correlations
+        train_df = (
+                   train_df.groupby(['target_group','label'], group_keys=False)
+                   .apply(
+                    lambda x: x.sample(50 
+                                       if (x.name[0] == 'women' and x.name[1] == 0) 
+                                       or (x.name[0] == 'black' and x.name[1] == 0)  
+                                       or (x.name[0] == 'lgbtq' and x.name[1] == 0) 
+                                       or (x.name[0] == 'jewish' and x.name[1] == 0) 
+                                       else 250)
+                    )
+                )
 
         train_df.to_csv(path_to_data+"train.csv", index=False)
 
