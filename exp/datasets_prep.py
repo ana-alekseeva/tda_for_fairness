@@ -41,7 +41,7 @@ def prepare_toxigen(path_to_data="../../data/toxigen/",test_samples_per_group = 
         test_df["text"] = [i[2:-1] for i in test_df["text"]]
         test_df = test_df.dropna(subset=["text","label","target_group"])
         test_df = test_df.loc[test_df["text"].str.len() != 0]
-        test_df = test_df.groupby(['target_group','label'], group_keys=False).apply(lambda x: x.sample(test_samples_per_group/2))
+        test_df = test_df.groupby(['target_group','label'], group_keys=False).apply(lambda x: x.sample(int(test_samples_per_group/2)))
         
         test_df.to_csv(path_to_data+"test.csv", index=False)
 
