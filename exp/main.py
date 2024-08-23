@@ -19,9 +19,9 @@ def main():
     val_df = pd.read_csv(PATH_TO_DATA + "val.csv")
     test_df = pd.read_csv(PATH_TO_DATA + "test.csv")
 
-    utils.plot_distr_by_group(train_df, "train")
-    utils.plot_distr_by_group(val_df, "val")
-    utils.plot_distr_by_group(test_df, "test")
+    #utils.plot_distr_by_group(train_df, "train")
+    #utils.plot_distr_by_group(val_df, "val")
+    #utils.plot_distr_by_group(test_df, "test")
 
     train_text = train_df["text"].to_list()
     val_text = val_df["text"].to_list()
@@ -51,12 +51,12 @@ def main():
     model = AutoModelForSequenceClassification.from_pretrained(model_path,num_labels = 2).to(DEVICE)
     tokenizer = AutoTokenizer.from_pretrained(config.TOKENIZER_NAME, use_fast=True, trust_remote_code=True)
     
-    first_module_baseline = utils.FirstModuleBaseline(train_text, test_text, model, tokenizer)
-    first_module_baseline.get_Bm25_scores()
-    first_module_baseline.get_FAISS_scores()
+    #first_module_baseline = utils.FirstModuleBaseline(train_text, test_text, model, tokenizer)
+    #first_module_baseline.get_Bm25_scores()
+    #first_module_baseline.get_FAISS_scores()
 
-    first_module_tda = utils.FirstModuleTDA(train_dataset,test_dataset,model)
-    first_module_tda.get_IF_scores(out="../../output/")
+    #first_module_tda = utils.FirstModuleTDA(train_dataset,test_dataset,model)
+    #first_module_tda.get_IF_scores(out="../../output/")
 
     #first_module_tda.get_TRAK_scores(out="../../output/")
 
@@ -76,7 +76,15 @@ def main():
                 train_set_size=None,
                 val_set_size=None,
                 device=DEVICE)
-        
+
+        for k in range(5,50,5):
+            print(k)
+            new_folder = f"../../output/{method}_finetuning/{k}"
+            os.mkdir(new_folder)
+            
+            debiased_train_idx = d3m.debias(num_to_discard=k)
+            finetune_model(train_dataset.select(debiased_train_idx), val_dataset,pretrained_model, tokenizer,new_folder)
+
         for k in range(50,750,50):
             print(k)
             new_folder = f"../../output/{method}_finetuning/{k}"
@@ -86,12 +94,19 @@ def main():
             finetune_model(train_dataset.select(debiased_train_idx), val_dataset,pretrained_model, tokenizer,new_folder)
 
     n = train_df.shape[0]
+    for k in range(5,50,5):
+        print(k)
+        new_folder = f"../../output/random_finetuning/{k}"
+        os.mkdir(new_folder)
+        random_indices = random.sample(range(n), k)
+        finetune_model(train_dataset.select(random_indices), val_dataset,pretrained_model, tokenizer,new_folder)
+
     for k in range(50,750,50):
         print(k)
         new_folder = f"../../output/random_finetuning/{k}"
         os.mkdir(new_folder)
         random_indices = random.sample(range(n), k)
-        finetune_model(train_dataset.select(), val_dataset,pretrained_model, tokenizer,new_folder)
+        finetune_model(train_dataset.select(random_indices), val_dataset,pretrained_model, tokenizer,new_folder)
 
 
 if __name__ == "__main__":
