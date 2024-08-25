@@ -32,8 +32,8 @@ ks = list(range(10,50,10)) + list(range(50,750,50))
 
 for method,color in zip(methods, colors):
     df_acc_method = pd.read_csv(f'../../output/{method}_finetuning/total_accuracy.csv')
-    plt.errorbar(ks, df_acc_method["mean"], yerr=df_acc_method["std"], fmt='o', capsize=5, capthick=2, ecolor='gray', color = color)
-    plt.plot([0]+ks, np.hstack([base_model_acc,df_acc_method["mean"]]), color = color, label = method)
+    plt.errorbar(df_acc_method["k"], df_acc_method["mean"], yerr=df_acc_method["std"], fmt='o', capsize=5, capthick=2, ecolor='gray', color = color)
+    plt.plot([0]+df_acc_method["k"].to_list(), np.hstack([base_model_acc,df_acc_method["mean"]]), color = color, label = method)
 
 plt.xlabel('K Removed Training Samples')
 plt.ylabel('Total Accuracy')
@@ -64,8 +64,8 @@ for group in data_groups["group"].unique():
 
     for method,color in zip(methods, colors):
         df_group_method = df_group.loc[df_group["method"] == method]
-        plt.errorbar(ks, df_group_method["mean"], yerr=df_group_method["std"], fmt='o', capsize=5, capthick=2, ecolor='gray', color = color)
-        plt.plot([0]+ks, np.hstack([base_model_acc_group,df_group_method["mean"]]), color = color, label = method)
+        plt.errorbar(df_group_method["k"], df_group_method["mean"], yerr=df_group_method["std"], fmt='o', capsize=5, capthick=2, ecolor='gray', color = color)
+        plt.plot([0]+df_group_method["k"].to_list(), np.hstack([base_model_acc_group,df_group_method["mean"]]), color = color, label = method)
 
     plt.xlabel('K Removed Training Samples')
     plt.ylabel('Accuracy')
