@@ -28,10 +28,12 @@ base_model_acc = utils.compute_accuracy(base_model,test_dl)
 
 colors = sns.color_palette("Set1", n_colors=5)
 methods = ["BM25","FAISS","IF","TRAK","random"]
-ks = list(range(10,50,10)) + list(range(50,750,50))
+#ks = list(range(10,50,10)) + list(range(50,750,50))
+ks = [10,20,30,40,50,100,150]
 
 for method,color in zip(methods, colors):
     df_acc_method = pd.read_csv(f'../../output/{method}_finetuning/total_accuracy.csv')
+    df_acc_method = df_acc_method.loc[df_acc_method["k"].isin(ks)]
     plt.errorbar(df_acc_method["k"], df_acc_method["mean"], yerr=df_acc_method["std"], fmt='o', capsize=5, capthick=2, ecolor='gray', color = color)
     plt.plot([0]+df_acc_method["k"].to_list(), np.hstack([base_model_acc,df_acc_method["mean"]]), color = color, label = method)
 
@@ -49,6 +51,7 @@ data_groups = pd.DataFrame(columns=["method","k","acc","std"])
 
 for method in methods:
     df_acc_method_groups = pd.read_csv(f'../../output/{method}_finetuning/accuracy_by_groups.csv')
+    df_acc_method_groups = df_acc_method_groups.loc[df_acc_method_groups["k"].isin(ks)]
     df_acc_method_groups["method"] = method
     data_groups = pd.concat([data_groups,df_acc_method_groups],axis=0)
 
