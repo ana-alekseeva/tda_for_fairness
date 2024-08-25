@@ -27,6 +27,12 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from trak import TRAKer
 
+from transformers import (
+    AutoConfig,
+    AutoModelForSequenceClassification,
+)
+
+
 
 def plot_distr_by_group(df, title):
     """
@@ -308,16 +314,32 @@ class FirstModuleTDA():
         torch.save(scores, '../../output/IF_scores.pt')
 
     def get_TRAK_scores(self,out):
+        class SequenceClassificationModel(nn.Module):
+            """
+            Wrapper for HuggingFace sequence classification models.
+            """
+            def __init__(self,model):
+                super().__init__()
+                self.model = model
+                self.model.eval().cuda()
+
+            def forward(self, input_ids, token_type_ids, attention_mask):
+                return self.model(input_ids=input_ids,
+                    token_type_ids=token_type_ids,
+                    attention_mask=attention_mask).logits
+
+
+        model = SequenceClassificationModel(self.model)
+        
 
         def process_batch(batch):
             return batch['input_ids'], batch['token_type_ids'], batch['attention_mask'], batch['labels']
 
         device = 'cuda'
-        model = self.model.to(device)
         train_dataloader = dp.get_dataloader(self.train_dataset, 8)
         test_dataloader = dp.get_dataloader(self.test_dataset, 8)
 
-        traker = TRAKer(model=self.model,
+        traker = TRAKer(model=model,
                         task="text_classification",
                         train_set_size=self.train_dataset.num_rows,
                         save_dir=out,
@@ -336,7 +358,7 @@ class FirstModuleTDA():
         traker.start_scoring_checkpoint(exp_name='toxigen_bert',
                                         checkpoint=model.state_dict(),
                                         model_id=0,
-                                        num_targets=self.val_dataset.num_rows)
+                                        num_targets=self.test_dataset.num_rows)
         
         for batch in tqdm(test_dataloader, desc='Scoring..'):
             batch = process_batch(batch)
@@ -344,7 +366,7 @@ class FirstModuleTDA():
             traker.score(batch=batch, num_samples=batch[0].shape[0])
 
         scores = traker.finalize_scores(exp_name='toxigen_bert')
-        torch.save(scores, '../../output/TRAK_scores.pt')
+        torch.save(scores.T, '../../output/TRAK_scores.pt')
 
 
 

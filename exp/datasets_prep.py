@@ -105,6 +105,7 @@ def get_dataloader(dataset, batch_size):
         return {
             'input_ids': torch.tensor([item['input_ids'] for item in batch]),
             'attention_mask': torch.tensor([item['attention_mask'] for item in batch]),
+            'token_type_ids': torch.tensor([item['token_type_ids'] for item in batch]),
             'labels': torch.tensor([item['labels'] for item in batch]),
         }
     return DataLoader(dataset, batch_size=batch_size, shuffle=False,collate_fn=collate_fn)
