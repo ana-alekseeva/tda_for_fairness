@@ -517,7 +517,7 @@ class D3M:
         )
 
         group_alignment_scores = self.compute_group_alignment_scores(
-            self.scores, self.group_indices_train, group_losses
+            self.scores, self.group_indices_val, group_losses  # I changed group_indices_train to group_indices_val
         )
 
         # Step 3:
