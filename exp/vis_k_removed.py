@@ -27,7 +27,7 @@ test_dl = dp.get_dataloader(test_dataset, config.BATCH_SIZE)
 base_model_acc = utils.compute_accuracy(base_model,test_dl)
 
 colors = sns.color_palette("Set1", n_colors=5)
-methods = ["IF","TRAK","random"]#"BM25","FAISS","IF","TRAK","random"]
+methods = ["BM25","FAISS","IF","TRAK","random"]
 #ks = list(range(10,50,10)) + list(range(50,750,50))
 ks = [10,20,30,40,50,100,150,200]
 

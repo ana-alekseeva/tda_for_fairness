@@ -147,9 +147,12 @@ class FirstModuleBaseline():
         # Add the training embeddings to the index
         index.add(train_embeddings)
         # Compute similarities
-        scores, _ = index.search(test_embeddings, n_train)
-        
-        torch.save(scores, '../../output/FAISS_scores.pt')
+        D,I = index.search(test_embeddings, n_train)
+        reordered_D = np.zeros_like(D)
+        for row in range(I.shape[0]):
+            reordered_D[row, I[row]] = D[row]
+
+        torch.save(reordered_D, '../../output/FAISS_scores.pt')
 
     def get_gradient_scores(self,val_labels):
         
@@ -460,11 +463,15 @@ class D3M:
         n_groups = len(set(group_indices))
         S = np.array(scores)
         g = [
-            group_losses[i].cpu().numpy() * S[:, np.array(group_indices) == i].mean(axis=1)
+            group_losses[i].cpu().numpy() * np.nanmean(S[:, np.array(group_indices) == i],axis=1)
             for i in range(n_groups)
         ]
         g = np.stack(g)
-        group_alignment_scores = g.mean(axis=0)
+        
+        nan_perc = np.isnan(g).mean()
+        if nan_perc > 0.2:
+            raise ValueError(f"The percentage of NaNs in g is {nan_perc}.")
+        group_alignment_scores = np.nanmean(g,axis=0) # I changed here as some BM25 scores are too small
         return group_alignment_scores
 
     def get_debiased_train_indices(

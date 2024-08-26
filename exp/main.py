@@ -67,8 +67,8 @@ def main():
     model = AutoModelForSequenceClassification.from_pretrained(model_path,num_labels = 2).to(DEVICE)
     tokenizer = AutoTokenizer.from_pretrained(config.TOKENIZER_NAME, use_fast=True, trust_remote_code=True)
     
-    #first_module_baseline = utils.FirstModuleBaseline(train_text, test_text, model, tokenizer)
-    #first_module_baseline.get_Bm25_scores()
+    first_module_baseline = utils.FirstModuleBaseline(train_text, test_text, model, tokenizer)
+    first_module_baseline.get_Bm25_scores()
     #first_module_baseline.get_FAISS_scores()
 
     #first_module_tda = utils.FirstModuleTDA(train_dataset,test_dataset,model)
@@ -81,7 +81,7 @@ def main():
     ks = list(range(10,50,10)) + list(range(50,750,50))
 
 
-    for method in ["TRAK"]:#"BM25","FAISS","IF","TRAK"]:
+    for method in ["FAISS"]:#"BM25","FAISS","IF","TRAK"]:
 
         scores = torch.load(f"../../output/{method}_scores.pt")
         scores = scores.T
@@ -115,7 +115,7 @@ def main():
             os.mkdir(new_folder)
             
             debiased_train_idx = d3m.debias(num_to_discard=k)
-            print(len(debiased_train_idx))
+            print(debiased_train_idx[:10])
             finetune_model(train_dataset.select(debiased_train_idx), val_dataset,pretrained_model, tokenizer,new_folder)
             
             checkpoints = os.listdir(new_folder)
