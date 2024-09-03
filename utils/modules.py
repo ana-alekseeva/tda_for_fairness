@@ -38,7 +38,6 @@ class FirstModuleBaseline():
         self.path_to_save = path_to_save
     
     def get_embeddings(self, texts):
-        # Set model to evaluation mode
         self.model.eval()
 
         embeddings = []
@@ -47,7 +46,6 @@ class FirstModuleBaseline():
                 batch = texts[i:i+config.BATCH_SIZE]
             except:
                 batch = texts[i:]
-            # Get the model's output
             with torch.no_grad():
                 inputs = self.tokenizer(batch, return_tensors="pt", padding=True, truncation=True, max_length=config.MAX_LENGTH)
                 inputs.to(DEVICE)
@@ -98,6 +96,11 @@ class FirstModuleBaseline():
         torch.save(scores, self.path_to_save + 'BM25_scores.pt')
 
     def get_FAISS_scores(self):
+        """
+        Compute 2 types of similarity scores using the FAISS library:
+        1) Cosine similarity
+        2) Inverse of L2 distance
+        """
 
         test_embeddings = self.get_embeddings(self.test_texts)
         train_embeddings = self.get_embeddings(self.train_texts)
@@ -106,17 +109,28 @@ class FirstModuleBaseline():
         test_embeddings = test_embeddings.cpu().numpy().astype(np.float32)
  
         n_train, d = train_embeddings.shape
-   
-        index = faiss.IndexFlatIP(d)  # Inner product similarity
-        # Add the training embeddings to the index
-        index.add(train_embeddings)
-        # Compute similarities
-        D,I = index.search(test_embeddings, n_train)
-        reordered_D = np.zeros_like(D)
-        for row in range(I.shape[0]):
-            reordered_D[row, I[row]] = D[row]
 
-        torch.save(reordered_D, self.path_to_save + 'FAISS_scores.pt')
+        def sim_matrix_from_index(index, train_embeddings=train_embeddings, test_embeddings=test_embeddings):  
+            index.add(train_embeddings)
+            D,I = index.search(test_embeddings, n_train)
+            reordered_D = np.zeros_like(D)
+            for row in range(I.shape[0]):
+                reordered_D[row, I[row]] = D[row]
+            return reordered_D
+
+        # 1.Cosine similarity
+        index = faiss.IndexFlatIP(d) 
+        train_norm_embeddings = F.normalize(train_embeddings, p=2, dim=1)
+        test_norm_embeddings = F.normalize(test_embeddings, p=2, dim=1)
+        cosine_scores = sim_matrix_from_index(index,train_norm_embeddings, test_norm_embeddings) 
+        torch.save(cosine_scores, self.path_to_save + 'cosine_scores.pt')
+
+        # 2. Inverse of L2 distance
+        index = faiss.IndexFlatL2(d)
+        l2_scores = sim_matrix_from_index(index) 
+        l2_scores = 1/(1e-3 + l2_scores)
+        torch.save(l2_scores, self.path_to_save + 'l2_scores.pt')
+
 
 
 class FirstModuleTDA():
@@ -227,7 +241,10 @@ class FirstModuleTDA():
 
         torch.save(scores, self.path_to_save + 'IF_scores.pt')
 
-    def get_TRAK_scores(self,out):
+    def get_TracIn_scores(self):
+        pass
+
+    def get_TRAK_scores(self):
         class SequenceClassificationModel(nn.Module):
             """
             Wrapper for HuggingFace sequence classification models.
@@ -249,8 +266,8 @@ class FirstModuleTDA():
         def process_batch(batch):
             return batch['input_ids'], batch['token_type_ids'], batch['attention_mask'], batch['labels']
 
-        train_dataloader = get_dataloader(self.train_dataset, 8)
-        test_dataloader = get_dataloader(self.test_dataset, 8)
+        train_dataloader = get_dataloader(self.train_dataset, 8,shuffle=False)
+        test_dataloader = get_dataloader(self.test_dataset, 8, shuffle=False)
 
         traker = TRAKer(model=model,
                         task="text_classification",

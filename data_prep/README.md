@@ -13,7 +13,8 @@ pip install -r requirements.txt
 To generate train, validation and test datasets used in the study do the following:
 
 ```bash
-python toxigen_prep.py --test_samples_per_group 100 \
+python toxigen_prep.py --train_samples_per_group 2000\
+    --test_samples_per_group 100 \
     --path_to_save ../../data/toxigen/ \
     --seed 42
 ```

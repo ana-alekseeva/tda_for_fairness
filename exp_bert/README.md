@@ -10,7 +10,7 @@ python train.py --checkpoint_dir ../../output_bert/toxigen/base/ \
 2) Compute scores
 
 ```bash
-python compute_scores.py --checkpoint_dir ../../output_bert/toxigen/base/best_checkpoint \
+python compute_firstmod_scores.py --checkpoint_dir ../../output_bert/toxigen/base/best_checkpoint \
     --data_dir ../../data/toxigen/
     --path_to_save ../../output_bert/toxigen/
 ```
@@ -18,5 +18,7 @@ python compute_scores.py --checkpoint_dir ../../output_bert/toxigen/base/best_ch
 3) Run counterfactual
 
 ```bash
-python train.py 
+python run_counterfactual.py --checkpoint_dir ../../output_bert/toxigen/base/best_checkpoint \
+        --data_dir ../../data/toxigen/
+        --output_dir ../../output_bert/toxigen/
 ```

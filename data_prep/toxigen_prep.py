@@ -4,15 +4,21 @@ from datasets import load_dataset
 import os
 import argparse
 
-from ..utils import plot_distr_by_group
+from exp_bert.utils import plot_distr_by_group
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Create train, validation and test datasets of ToxiGen.")
-
+    
+    parser.add_argument(
+        "--train_samples_per_group",
+        type=int,
+        default=2000,
+        help="Number of train samples per group.",
+    )
     parser.add_argument(
         "--test_samples_per_group",
         type=int,
-        default=50,
+        default=100,
         help="Number of test samples per group.",
     )
 
@@ -51,7 +57,7 @@ def main():
     # Create a balanced dataset
     min_samples_alice = df.loc[df['generation_method']=="ALICE"].groupby('group').size().min()
     min_samples_top_k = df.loc[df['generation_method']=="top-k"].groupby('group').size().min()
-
+    
     df = (
             df.groupby(
                    ['group','generation_method'], group_keys=False)
@@ -61,7 +67,8 @@ def main():
                                           random_state=args.seed)
                        )    
        )
-    min_samples = df.groupby(['group','prompt_label']).size().min()
+    #min_samples = df.groupby(['group','prompt_label']).size().min()
+    min_samples = int(args.train_samples_per_group /2 )
     # introduce spurious correlations
     n_disparity = int(min_samples * 0.25)
     df = (

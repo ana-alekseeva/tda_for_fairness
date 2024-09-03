@@ -6,8 +6,7 @@ import evaluate as ev
 import argparse
 import os
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
-from exp_bert.utils import get_dataloader, get_dataset
-from exp_bert.utils import compute_accuracy
+from utils.utils import get_dataloader, get_dataset,compute_accuracy
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -42,11 +41,12 @@ def parse_args():
 
 
 def finetune_model(train_dataset,val_dataset,output_dir, random_seed=42):
+
     np.random.seed(random_seed)
     torch.manual_seed(random_seed)
     torch.cuda.manual_seed(random_seed)
     torch.cuda.manual_seed_all(random_seed)
-
+    
     # Suppress warnings and info logs
     tf.logging.set_verbosity_error()
 
@@ -72,10 +72,14 @@ def finetune_model(train_dataset,val_dataset,output_dir, random_seed=42):
         per_device_eval_batch_size=config.VAL_BATCH_SIZE,
         num_train_epochs=config.NUM_EPOCHS,
         weight_decay=config.WEIGHT_DECAY,
+        seed = random_seed,
         report_to="none",
         metric_for_best_model="accuracy",
         log_level = "error",
-        disable_tqdm=False
+        disable_tqdm=False,
+        #load_best_model_at_end=True,       
+       # save_total_limit=1,              
+       # greater_is_better=True
     )
     trainer = tf.Trainer(
         model=model,
@@ -89,6 +93,14 @@ def finetune_model(train_dataset,val_dataset,output_dir, random_seed=42):
     trainer.remove_callback(tf.trainer_callback.PrinterCallback)
 
     trainer.train()
+    best_ckpt_path = trainer.state.best_model_checkpoint
+
+    for checkpoint in os.listdir(output_dir):
+        if checkpoint != best_ckpt_path:
+            os.remove(output_dir + checkpoint)
+
+    os.rename(output_dir + best_model, args.checkpoint_dir + "best_ckeckpoint")
+
     tf.logging.set_verbosity_warning()
 
 def main():
@@ -101,17 +113,17 @@ def main():
 
     finetune_model(train_dataset,val_dataset,args.checkpoint_dir, random_seed=args.seed)
 
-    max_acc = 0
-    best_model = ""
-    for checkpoint in os.listdir(args.checkpoint_dir):
-        model = AutoModelForSequenceClassification.from_pretrained(args.checkpoint_dir + checkpoint,num_labels = 2).to(DEVICE)                        
-        model.eval()
-        acc = compute_accuracy(model, val_dl)
-        if acc > max_acc:
-            best_model = checkpoint
-        else:
-            os.remove(args.checkpoint_dir + checkpoint)
-    os.rename(args.checkpoint_dir + best_model, args.checkpoint_dir + "best_ckeckpoint")
+    #max_acc = 0
+    #best_model = ""
+    #for checkpoint in os.listdir(args.checkpoint_dir):
+    #    model = AutoModelForSequenceClassification.from_pretrained(args.checkpoint_dir + checkpoint,num_labels = 2).to(DEVICE)                        
+    #    model.eval()
+    #    acc = compute_accuracy(model, val_dl)
+    #    if acc > max_acc:
+    #        best_model = checkpoint
+    #    else:
+    #        os.remove(args.checkpoint_dir + checkpoint)
+    #os.rename(args.checkpoint_dir + best_model, args.checkpoint_dir + "best_ckeckpoint")
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
 import pandas as pd
 import argparse
-from exp_bert.modules import FirstModuleBaseline, FirstModuleTDA
+from utils.modules import FirstModuleBaseline, FirstModuleTDA
 
 from exp_bert.utils import get_dataloader, get_dataset
 
