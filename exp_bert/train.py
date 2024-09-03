@@ -1,11 +1,17 @@
 import torch
 import transformers as tf
 import numpy as np
-import bert_config as config
+import config
 import evaluate as ev
 import argparse
-import os
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
+
+import sys
+import os
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.abspath(os.path.join(current_dir, '..')) 
+sys.path.append(parent_dir)
+
 from utils.utils import get_dataloader, get_dataset,compute_accuracy
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")

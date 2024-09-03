@@ -1,13 +1,18 @@
-import exp_bert.config as config
+import config
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
-import os
 import pandas as pd
 import random
 import shutil
 
 import numpy as np
 import argparse
+
+import sys
+import os
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.abspath(os.path.join(current_dir, '..')) 
+sys.path.append(parent_dir)
 
 from exp_bert.train import finetune_model
 from utils.utils import get_dataloader, get_dataset, compute_accuracy_and_loss

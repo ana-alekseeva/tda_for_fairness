@@ -1,10 +1,16 @@
-import exp_bert.config as config
+import config
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
 import pandas as pd
 import argparse
-from utils.modules import FirstModuleBaseline, FirstModuleTDA
 
+import sys
+import os
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.abspath(os.path.join(current_dir, '..')) 
+sys.path.append(parent_dir)
+
+from utils.modules import FirstModuleBaseline, FirstModuleTDA
 from utils.utils import get_dataset
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
