@@ -1,9 +1,12 @@
 import pandas as pd
 import numpy as np
-from torch.utils.data import Dataset, DataLoader, TensorDataset
-import os
+
 import torch
+from torch.utils.data import DataLoader, TensorDataset
 from torch.nn import functional as F
+from torch import nn
+from transformers import default_data_collator
+
 from rank_bm25 import BM25Okapi
 import string
 import nltk
@@ -15,64 +18,24 @@ from kronfluence.analyzer import Analyzer, prepare_model
 from kronfluence.task import Task
 from kronfluence.utils.dataset import DataLoaderKwargs
 from kronfluence.arguments import FactorArguments, ScoreArguments
-from transformers import default_data_collator
-from typing import List, Optional, Tuple
-from torch import nn
-import math
-import config
-import datasets_prep as dp
-import pandas as pd
-import matplotlib.pyplot as plt
-
-from tqdm import tqdm
 from trak import TRAKer
 
-from transformers import (
-    AutoConfig,
-    AutoModelForSequenceClassification,
-)
+from typing import List, Optional, Tuple
+from tqdm import tqdm
+import matplotlib.pyplot as plt
 
+import config
+from .utils import get_dataloader
 
-
-def plot_distr_by_group(df, title):
-    """
-    Plot the distribution of samples by group.
-    """
-    # Create a count of samples for each combination of label and target group
-    grouped_data = df.groupby(['target_group', 'label']).size().unstack()
-
-    # Set up the plot
-    plt.figure(figsize=(12, 6))
-
-    # Create the grouped bar plot
-    grouped_data.plot(kind='bar', ax=plt.gca())
-
-    # Customize the plot
-    plt.title('Distribution of Labels by Group')
-    plt.xlabel('Group')
-    plt.ylabel('Number of Samples')
-    plt.legend(['Neutral (0)', 'Hate (1)'])
-
-    # Rotate x-axis labels for better readability
-    plt.xticks(rotation=45)
-
-    # Add value labels on top of each bar
-    for i in range(len(grouped_data)):
-        for j in range(len(grouped_data.columns)):
-            value = grouped_data.iloc[i, j]
-            plt.text(i, value, str(value), ha='center', va='bottom')
-
-    # Adjust layout to prevent cutoff
-    plt.tight_layout()
-    plt.savefig(f'../vis/distr_by_group_{title}.png', dpi=300, bbox_inches='tight')
-
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class FirstModuleBaseline():
-    def __init__(self,train_texts, test_texts,model, tokenizer):
+    def __init__(self,train_texts, test_texts,model, tokenizer, path_to_save):
         self.train_texts = train_texts
         self.test_texts = test_texts
         self.model = model
         self.tokenizer = tokenizer
+        self.path_to_save = path_to_save
     
     def get_embeddings(self, texts):
         # Set model to evaluation mode
@@ -86,7 +49,8 @@ class FirstModuleBaseline():
                 batch = texts[i:]
             # Get the model's output
             with torch.no_grad():
-                inputs = self.tokenizer(batch, return_tensors="pt", padding=True, truncation=True, max_length=config.MAX_LENGTH).to("cuda")
+                inputs = self.tokenizer(batch, return_tensors="pt", padding=True, truncation=True, max_length=config.MAX_LENGTH)
+                inputs.to(DEVICE)
                 outputs = self.model(**inputs, output_hidden_states=True)
             # Extract the hidden states 
             hidden_states = outputs.hidden_states
@@ -131,7 +95,7 @@ class FirstModuleBaseline():
         
         # normalize scores
         scores = scores / scores.sum(axis=1,keepdims = True)
-        torch.save(scores, '../../output/BM25_scores.pt')
+        torch.save(scores, self.path_to_save + 'BM25_scores.pt')
 
     def get_FAISS_scores(self):
 
@@ -152,70 +116,17 @@ class FirstModuleBaseline():
         for row in range(I.shape[0]):
             reordered_D[row, I[row]] = D[row]
 
-        torch.save(reordered_D, '../../output/FAISS_scores.pt')
+        torch.save(reordered_D, self.path_to_save + 'FAISS_scores.pt')
 
-    def get_gradient_scores(self,val_labels):
-        
-        # Set the model to evaluation mode and enable gradient computation
-
-        # Prepare the training sample
-        train_encoding = self.tokenizer(self.train_texts["text"].to_list(), return_tensors='pt', padding=True, truncation=True, max_length=config.MAX_LENGTH)
-        train_labels = self.train_texts['label'].to_list()
-        #train_input_ids = train_encoding['input_ids']
-        #train_attention_mask = train_encoding['attention_mask']
-
-        # Prepare the test sample
-        #test_encoding = self.tokenizer(self.test_texts, return_tensors='pt', padding=True, truncation=True, max_length=config.MAX_LENGTH)
-        #test_input_ids = test_encoding['input_ids']
-        #test_attention_mask = test_encoding['attention_mask']
-
-
-        train_dataset = TensorDataset(train_encoding['input_ids'], train_encoding['attention_mask'], torch.tensor(train_labels))
-        train_loader = DataLoader(train_dataset, batch_size=len(self.train_texts))  # Use all training samples in one batch
-
-        # Function to get sentence embeddings
-        def get_sentence_embedding(model, input_ids, attention_mask):
-            with torch.no_grad():
-                outputs = model.bert(input_ids=input_ids, attention_mask=attention_mask)
-            return outputs.last_hidden_state[:, 0, :]  # Use [CLS] token embedding
-
-        # Compute sentence embeddings for all training samples
-        self.model.eval()
-        for batch in train_loader:
-            train_input_ids, train_attention_mask, _ = batch
-            train_embeddings = get_sentence_embedding(self.model, train_input_ids, train_attention_mask)
-
-        # Enable gradient computation for train embeddings
-        train_embeddings.requires_grad_()
-
-        for test_sample, test_label in zip(self.test_texts["text"], self.test_texts["label"]):
-        # Compute loss for test sample
-            test_encoding = self.tokenizer(test_sample, return_tensors='pt', padding=True, truncation=True, max_length=config.MAX_LENGTH)
-            test_input_ids = test_encoding['input_ids']
-            test_attention_mask = test_encoding['attention_mask']
-
-            # Forward pass
-            outputs = self.model(input_ids=test_input_ids, attention_mask=test_attention_mask, labels=torch.tensor([test_label]))
-            loss = outputs.loss
-
-            # Compute gradients
-            loss.backward()
-
-            # The gradients are now stored in train_embeddings.grad
-            gradients = train_embeddings.grad
-            break
-        return gradients
-
-        #scores = ...
-        #torch.save(scores, '../../output/gradients_scores.pt')
 
 class FirstModuleTDA():
-    def __init__(self,train_dataset,test_dataset,model):
+    def __init__(self,train_dataset,test_dataset,model, path_to_save):
         self.train_dataset = train_dataset
         self.test_dataset = test_dataset
-        self.model = model.to("cuda")      
+        self.model = model.to(DEVICE)
+        self.path_to_save = path_to_save     
 
-    def get_IF_scores(self,out):
+    def get_IF_scores(self):
 
         class TextClassificationTask(Task):
             def compute_train_loss(
@@ -314,7 +225,7 @@ class FirstModuleTDA():
         scores = analyzer.load_pairwise_scores(scores_name)["all_modules"]
 
 
-        torch.save(scores, '../../output/IF_scores.pt')
+        torch.save(scores, self.path_to_save + 'IF_scores.pt')
 
     def get_TRAK_scores(self,out):
         class SequenceClassificationModel(nn.Module):
@@ -324,7 +235,7 @@ class FirstModuleTDA():
             def __init__(self,model):
                 super().__init__()
                 self.model = model
-                self.model.eval().cuda()
+                self.model.eval().to(DEVICE)
 
             def forward(self, input_ids, token_type_ids, attention_mask):
                 return self.model(input_ids=input_ids,
@@ -338,38 +249,37 @@ class FirstModuleTDA():
         def process_batch(batch):
             return batch['input_ids'], batch['token_type_ids'], batch['attention_mask'], batch['labels']
 
-        device = 'cuda'
-        train_dataloader = dp.get_dataloader(self.train_dataset, 8)
-        test_dataloader = dp.get_dataloader(self.test_dataset, 8)
+        train_dataloader = get_dataloader(self.train_dataset, 8)
+        test_dataloader = get_dataloader(self.test_dataset, 8)
 
         traker = TRAKer(model=model,
                         task="text_classification",
                         train_set_size=self.train_dataset.num_rows,
-                        save_dir=out,
-                        device=device,
+                        save_dir=self.path_to_save,
+                        device=DEVICE,
                         proj_dim= 1024) 
 
         traker.load_checkpoint(model.state_dict(), model_id=0)
         for batch in tqdm(train_dataloader, desc='Featurizing..'):
             # process batch into compatible form for TRAKer TextClassificationModelOutput
             batch = process_batch(batch)
-            batch = [x.to(device) for x in batch]
+            batch = [x.to(DEVICE) for x in batch]
             traker.featurize(batch=batch, num_samples=batch[0].shape[0])
 
         traker.finalize_features()
 
-        traker.start_scoring_checkpoint(exp_name='toxigen_bert',
+        traker.start_scoring_checkpoint(exp_name='trak_exp',
                                         checkpoint=model.state_dict(),
                                         model_id=0,
                                         num_targets=self.test_dataset.num_rows)
         
         for batch in tqdm(test_dataloader, desc='Scoring..'):
             batch = process_batch(batch)
-            batch = [x.cuda() for x in batch]
+            batch = [x.to(DEVICE) for x in batch]
             traker.score(batch=batch, num_samples=batch[0].shape[0])
 
-        scores = traker.finalize_scores(exp_name='toxigen_bert')
-        torch.save(scores.T, '../../output/TRAK_scores.pt')
+        scores = traker.finalize_scores(exp_name='trak_exp')
+        torch.save(scores.T, self.path_to_save + 'TRAK_scores.pt')
 
 
 
@@ -388,8 +298,7 @@ class D3M:
         group_indices_val,
         scores,
         train_set_size=None,
-        val_set_size=None,
-        device="cuda"
+        val_set_size=None
     ) -> None:
         """
         Args:
@@ -419,12 +328,12 @@ class D3M:
             device (optional):
                 pytorch device
         """
-        self.model = model.to(device)
+        self.model = model.to(DEVICE)
         self.checkpoints = checkpoints
         self.dataloaders = {"train": train_dataloader, "val": val_dataloader}
         self.group_indices_train = group_indices_train
         self.group_indices_val = group_indices_val
-        self.device = device
+        self.device = DEVICE
         self.scores = scores
 
     def get_group_losses(self, model, val_dl, group_indices) -> list:
@@ -536,31 +445,3 @@ class D3M:
         )
 
         return debiased_train_inds
-
-def compute_accuracy(model, dataloader, device="cuda"):
-    predictions = []
-    true_labels = []
-
-    with torch.no_grad():
-        for batch in dataloader:
-            batch = {k:batch[k].to(device) for k in batch.keys()}
-            outputs = model(**batch)
-            logits = outputs.logits
-            pred = torch.argmax(logits, dim=1).cpu().numpy()
-            predictions.extend(pred)
-            true_labels.extend(batch['labels'].cpu().numpy())
-
-    return sum(np.array(true_labels) == np.array(predictions) ) / len(predictions)
-
-def compute_predictions(model, dataloader, device="cuda"):
-    predictions = []
-
-    with torch.no_grad():
-        for batch in dataloader:
-            batch = {k:batch[k].to(device) for k in batch.keys()}
-            outputs = model(**batch)
-            logits = outputs.logits
-            pred = torch.argmax(logits, dim=1).cpu().numpy()
-            predictions.extend(pred)
-
-    return predictions

@@ -1,10 +1,10 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import utils
+import utils.utils as utils
 from transformers import AutoModelForSequenceClassification
 import torch
-import datasets_prep as dp
+import utils.datasets_prep as dp
 import config
 import numpy as np
 

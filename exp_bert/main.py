@@ -1,13 +1,14 @@
-import utils
+import utils.utils as utils
 import config
-from finetune import finetune_model
+from exp_bert.train import finetune_model
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
 import os
-import datasets_prep as dp
+import utils.datasets_prep as dp
 import pandas as pd
 import random
 import shutil
+
 import numpy as np
 
 def main():
@@ -69,19 +70,19 @@ def main():
     
     first_module_baseline = utils.FirstModuleBaseline(train_text, test_text, model, tokenizer)
     first_module_baseline.get_Bm25_scores()
-    #first_module_baseline.get_FAISS_scores()
+    first_module_baseline.get_FAISS_scores()
 
-    #first_module_tda = utils.FirstModuleTDA(train_dataset,test_dataset,model)
-    #first_module_tda.get_IF_scores(out="../../output/")
+    first_module_tda = utils.FirstModuleTDA(train_dataset,test_dataset,model)
+    first_module_tda.get_IF_scores()
 
-    #first_module_tda.get_TRAK_scores(out="../../output/")
+    first_module_tda.get_TRAK_scores()
 
 
      # 3. Fine-tune models on the "debiased dataset"    
     ks = list(range(10,50,10)) + list(range(50,750,50))
 
 
-    for method in ["FAISS"]:#"BM25","FAISS","IF","TRAK"]:
+    for method in ["BM25","FAISS","IF","TRAK"]:
 
         scores = torch.load(f"../../output/{method}_scores.pt")
         scores = scores.T
@@ -156,50 +157,50 @@ def main():
 
 
 
-    #n = train_df.shape[0]
-    #df_acc = pd.DataFrame(columns = ["k","mean","std"])
-    #df_acc_groups = pd.DataFrame(columns = ["group","k","mean","std"])                                    
-    #for k in ks:
-    #    print(k)
-    #    new_folder = f"../../output/random_finetuning/{k}"
-    #    os.mkdir(new_folder)
-    #    random_indices = random.sample(range(n), k)
-    #    finetune_model(train_dataset.select(random_indices), val_dataset,pretrained_model, tokenizer,new_folder)
+    n = train_df.shape[0]
+    df_acc = pd.DataFrame(columns = ["k","mean","std"])
+    df_acc_groups = pd.DataFrame(columns = ["group","k","mean","std"])                                    
+    for k in ks:
+        print(k)
+        new_folder = f"../../output/random_finetuning/{k}"
+        os.mkdir(new_folder)
+        random_indices = random.sample(range(n), n-k)
+        finetune_model(train_dataset.select(random_indices), val_dataset,pretrained_model, tokenizer,new_folder)
 
-    #    checkpoints = os.listdir(new_folder)
-    #    num_checkpoints = len(checkpoints[5:])
-    #    model_accuracies = []
-    #    model_accuracies_groups = {group:[] for group in groups}
+        checkpoints = os.listdir(new_folder)
+        num_checkpoints = len(checkpoints[5:])
+        model_accuracies = []
+        model_accuracies_groups = {group:[] for group in groups}
 
-    #    for checkpoint in checkpoints[5:]:
+        for checkpoint in checkpoints[5:]:
             # Load the model
-    #        model_path = f"{new_folder}/{checkpoint}"
-    #        model = AutoModelForSequenceClassification.from_pretrained(model_path,num_labels = 2).to(DEVICE)
-    #        model.eval()
+            model_path = f"{new_folder}/{checkpoint}"
+            model = AutoModelForSequenceClassification.from_pretrained(model_path,num_labels = 2).to(DEVICE)
+            model.eval()
 
-    #       accuracy = utils.compute_accuracy(model, test_dl, DEVICE)
-    #        model_accuracies.append(accuracy)
+            accuracy = utils.compute_accuracy(model, test_dl, DEVICE)
+            model_accuracies.append(accuracy)
 
-    #        for group in groups:
-    #            accuracy = utils.compute_accuracy(model, test_dl_groups[group], DEVICE)
-    #            model_accuracies_groups[group].append(accuracy)
+            for group in groups:
+                accuracy = utils.compute_accuracy(model, test_dl_groups[group], DEVICE)
+                model_accuracies_groups[group].append(accuracy)
 
-    #    shutil.rmtree(new_folder)
+        shutil.rmtree(new_folder)
 
         # Compute mean and standard error for each model
-    #    mean = np.mean(model_accuracies)
-    #    std_errors = np.std(model_accuracies) / np.sqrt(num_checkpoints)
+        mean = np.mean(model_accuracies)
+        std_errors = np.std(model_accuracies) / np.sqrt(num_checkpoints)
 
-    #    df_acc.loc[len(df_acc)] = [k,mean, std_errors]
+        df_acc.loc[len(df_acc)] = [k,mean, std_errors]
 
-    #    for group in groups:
-    #        mean = np.mean(model_accuracies_groups[group])
-    #        std_errors = np.std(model_accuracies_groups[group]) / np.sqrt(num_checkpoints)
-    #        df_acc_groups.loc[len(df_acc_groups)] = [group, k, mean, std_errors]
+        for group in groups:
+            mean = np.mean(model_accuracies_groups[group])
+            std_errors = np.std(model_accuracies_groups[group]) / np.sqrt(num_checkpoints)
+            df_acc_groups.loc[len(df_acc_groups)] = [group, k, mean, std_errors]
 
 
-     #   df_acc.to_csv(f"../../output/random_finetuning/total_accuracy.csv",index=False)
-     #   df_acc_groups.to_csv(f"../../output/random_finetuning/accuracy_by_groups.csv",index=False)
+        df_acc.to_csv(f"../../output/random_finetuning/total_accuracy.csv",index=False)
+        df_acc_groups.to_csv(f"../../output/random_finetuning/accuracy_by_groups.csv",index=False)
 
 
 
