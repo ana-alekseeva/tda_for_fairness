@@ -1,4 +1,4 @@
-import config
+import exp_bert.config as config
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
 import os
@@ -9,9 +9,9 @@ import shutil
 import numpy as np
 import argparse
 
-from tda_for_fairness.exp_bert.train import finetune_model
-from tda_for_fairness.utils import get_dataloader, get_dataset, compute_accuracy_and_loss
-from tda_for_fairness.utils.modules import D3M
+from exp_bert.train import finetune_model
+from utils.utils import get_dataloader, get_dataset, compute_accuracy_and_loss
+from utils.modules import D3M
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 random.seed(42) # for random.randint

@@ -4,7 +4,7 @@ from datasets import load_dataset
 import os
 import argparse
 
-from exp_bert.utils import plot_distr_by_group
+from utils.utils import plot_distr_by_group
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Create train, validation and test datasets of ToxiGen.")

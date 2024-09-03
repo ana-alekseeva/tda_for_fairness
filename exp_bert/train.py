@@ -1,12 +1,12 @@
 import torch
 import transformers as tf
 import numpy as np
-import config
+import bert_config as config
 import evaluate as ev
 import argparse
 import os
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
-from tda_for_fairness.utils import get_dataloader, get_dataset,compute_accuracy
+from utils.utils import get_dataloader, get_dataset,compute_accuracy
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

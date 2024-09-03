@@ -1,11 +1,11 @@
-import config
+import exp_bert.config as config
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
 import pandas as pd
 import argparse
 from utils.modules import FirstModuleBaseline, FirstModuleTDA
 
-from tda_for_fairness.utils import get_dataset
+from utils.utils import get_dataset
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
