@@ -5,7 +5,7 @@ import pandas as pd
 import argparse
 from utils.modules import FirstModuleBaseline, FirstModuleTDA
 
-from exp_bert.utils import get_dataloader, get_dataset
+from tda_for_fairness.utils import get_dataset
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

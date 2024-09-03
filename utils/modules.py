@@ -25,7 +25,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 import config
-from .utils import get_dataloader
+from tda_for_fairness.utils import get_dataloader
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

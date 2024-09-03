@@ -6,7 +6,7 @@ import evaluate as ev
 import argparse
 import os
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
-from utils.utils import get_dataloader, get_dataset,compute_accuracy
+from tda_for_fairness.utils import get_dataloader, get_dataset,compute_accuracy
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -99,7 +99,7 @@ def finetune_model(train_dataset,val_dataset,output_dir, random_seed=42):
         if checkpoint != best_ckpt_path:
             os.remove(output_dir + checkpoint)
 
-    os.rename(output_dir + best_model, args.checkpoint_dir + "best_ckeckpoint")
+    os.rename(output_dir + best_ckpt_path, output_dir + "best_ckeckpoint")
 
     tf.logging.set_verbosity_warning()
 

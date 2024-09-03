@@ -61,8 +61,6 @@ def get_dataset(
 
 
 
-
-
 def plot_distr_by_group(df,var='label',title="",path_to_save="../vis/"):
     """
     Plot the distribution of samples by group.
@@ -115,6 +113,30 @@ def compute_accuracy(model, dataloader, device="cuda"):
             true_labels.extend(batch['labels'].cpu().numpy())
 
     return sum(np.array(true_labels) == np.array(predictions) ) / len(predictions)
+
+def compute_accuracy_and_loss(model, dataloader, device="cuda"):
+    predictions = []
+    true_labels = []
+    total_loss = 0.0
+    num_batches = 0
+
+    with torch.no_grad():
+        for batch in dataloader:
+            batch = {k:batch[k].to(device) for k in batch.keys()}
+            outputs = model(**batch)
+            logits = outputs.logits
+            
+            loss = outputs.loss
+            total_loss += loss.item()
+            num_batches += 1
+
+            pred = torch.argmax(logits, dim=1).cpu().numpy()
+            predictions.extend(pred)
+            true_labels.extend(batch['labels'].cpu().numpy())
+            
+    accuracy = sum(np.array(true_labels) == np.array(predictions) ) / len(predictions)
+    average_loss = total_loss / num_batches if num_batches > 0 else 0.0
+    return accuracy, average_loss
 
 def compute_predictions(model, dataloader, device="cuda"):
     predictions = []
