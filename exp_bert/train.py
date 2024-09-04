@@ -6,6 +6,7 @@ import evaluate as ev
 import argparse
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
+import shutil
 import sys
 import os
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -102,10 +103,10 @@ def finetune_model(train_dataset,val_dataset,output_dir, random_seed=42):
     best_ckpt_path = trainer.state.best_model_checkpoint
 
     for checkpoint in os.listdir(output_dir):
-        if checkpoint != best_ckpt_path:
-            os.remove(output_dir + checkpoint)
+        if output_dir + checkpoint != best_ckpt_path:
+            shutil.rmtree(output_dir + checkpoint)
 
-    os.rename(output_dir + best_ckpt_path, output_dir + "best_ckeckpoint")
+    os.rename(best_ckpt_path, output_dir + "best_checkpoint")
 
     tf.logging.set_verbosity_warning()
 
@@ -118,18 +119,6 @@ def main():
     val_dl = get_dataloader(val_dataset, config.VAL_BATCH_SIZE)
 
     finetune_model(train_dataset,val_dataset,args.checkpoint_dir, random_seed=args.seed)
-
-    #max_acc = 0
-    #best_model = ""
-    #for checkpoint in os.listdir(args.checkpoint_dir):
-    #    model = AutoModelForSequenceClassification.from_pretrained(args.checkpoint_dir + checkpoint,num_labels = 2).to(DEVICE)                        
-    #    model.eval()
-    #    acc = compute_accuracy(model, val_dl)
-    #    if acc > max_acc:
-    #        best_model = checkpoint
-    #    else:
-    #        os.remove(args.checkpoint_dir + checkpoint)
-    #os.rename(args.checkpoint_dir + best_model, args.checkpoint_dir + "best_ckeckpoint")
 
 
 if __name__ == "__main__":

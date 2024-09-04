@@ -24,8 +24,13 @@ from typing import List, Optional, Tuple
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-import config
-from tda_for_fairness.utils import get_dataloader
+
+import sys
+import os
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.abspath(os.path.join(current_dir, '..'))
+sys.path.append(parent_dir)
+from utils.utils import get_dataloader
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -37,17 +42,17 @@ class FirstModuleBaseline():
         self.tokenizer = tokenizer
         self.path_to_save = path_to_save
     
-    def get_embeddings(self, texts):
+    def get_embeddings(self, texts,batch_size=64,max_length=128):
         self.model.eval()
 
         embeddings = []
-        for i in range(0,len(texts),config.BATCH_SIZE):
+        for i in range(0,len(texts),batch_size):
             try:
-                batch = texts[i:i+config.BATCH_SIZE]
+                batch = texts[i:i+batch_size]
             except:
                 batch = texts[i:]
             with torch.no_grad():
-                inputs = self.tokenizer(batch, return_tensors="pt", padding=True, truncation=True, max_length=config.MAX_LENGTH)
+                inputs = self.tokenizer(batch, return_tensors="pt", padding=True, truncation=True, max_length=max_length)
                 inputs.to(DEVICE)
                 outputs = self.model(**inputs, output_hidden_states=True)
             # Extract the hidden states 
@@ -105,14 +110,12 @@ class FirstModuleBaseline():
         test_embeddings = self.get_embeddings(self.test_texts)
         train_embeddings = self.get_embeddings(self.train_texts)
    
-        train_embeddings = train_embeddings.cpu().numpy().astype(np.float32)
-        test_embeddings = test_embeddings.cpu().numpy().astype(np.float32)
- 
+         
         n_train, d = train_embeddings.shape
 
-        def sim_matrix_from_index(index, train_embeddings=train_embeddings, test_embeddings=test_embeddings):  
-            index.add(train_embeddings)
-            D,I = index.search(test_embeddings, n_train)
+        def sim_matrix_from_index(index, train_emb, test_emb):  
+            index.add(train_emb)
+            D,I = index.search(test_emb, n_train)
             reordered_D = np.zeros_like(D)
             for row in range(I.shape[0]):
                 reordered_D[row, I[row]] = D[row]
@@ -122,12 +125,19 @@ class FirstModuleBaseline():
         index = faiss.IndexFlatIP(d) 
         train_norm_embeddings = F.normalize(train_embeddings, p=2, dim=1)
         test_norm_embeddings = F.normalize(test_embeddings, p=2, dim=1)
+        
+        train_norm_embeddings = train_norm_embeddings.cpu().numpy().astype(np.float32)
+        test_norm_embeddings = test_norm_embeddings.cpu().numpy().astype(np.float32)
+        
         cosine_scores = sim_matrix_from_index(index,train_norm_embeddings, test_norm_embeddings) 
         torch.save(cosine_scores, self.path_to_save + 'cosine_scores.pt')
 
+        train_embeddings = train_embeddings.cpu().numpy().astype(np.float32)
+        test_embeddings = test_embeddings.cpu().numpy().astype(np.float32)
+
         # 2. Inverse of L2 distance
         index = faiss.IndexFlatL2(d)
-        l2_scores = sim_matrix_from_index(index) 
+        l2_scores = sim_matrix_from_index(index,train_embeddings,test_embeddings) 
         l2_scores = 1/(1e-3 + l2_scores)
         torch.save(l2_scores, self.path_to_save + 'l2_scores.pt')
 
@@ -212,7 +222,7 @@ class FirstModuleTDA():
         analyzer.fit_all_factors(
                     factors_name="ekfac",
                     dataset=self.train_dataset,
-                    per_device_batch_size=config.BATCH_SIZE,
+                    per_device_batch_size=64,
                     overwrite_output_dir=True,
                 )
 
@@ -232,8 +242,8 @@ class FirstModuleTDA():
             query_dataset=self.test_dataset,
             #query_indices=list(range(min([len(self.val_dataset), 2000]))),
             train_dataset=self.train_dataset,
-            per_device_query_batch_size=8,
-            per_device_train_batch_size=8,
+            per_device_query_batch_size=32,
+            per_device_train_batch_size=32,
             overwrite_output_dir=False,
         )
         scores = analyzer.load_pairwise_scores(scores_name)["all_modules"]

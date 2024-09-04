@@ -44,19 +44,20 @@ def parse_args():
 def main():
     args = parse_args()
 
-    train_text = pd.read_csv(args.data_dir + "train.csv")["text"].to_list()
-    test_text = pd.read_csv(args.data_dir + "test.csv")["text"].to_list()
+    #train_text = pd.read_csv(args.data_dir + "train.csv")["text"].to_list()
+    #test_text = pd.read_csv(args.data_dir + "test.csv")["text"].to_list()
 
+    tokenizer = AutoTokenizer.from_pretrained(config.TOKENIZER_NAME, use_fast=True, trust_remote_code=True)
+    
     train_dataset = get_dataset(tokenizer,config.MAX_LENGTH,args.data_dir,"train")
     test_dataset = get_dataset(tokenizer,config.MAX_LENGTH,args.data_dir,"test")
 
     # Load the model fine-tuned on toxigen dataset
     model = AutoModelForSequenceClassification.from_pretrained(args.checkpoint_dir,num_labels = 2).to(DEVICE)
-    tokenizer = AutoTokenizer.from_pretrained(config.TOKENIZER_NAME, use_fast=True, trust_remote_code=True)
     
-    first_module_baseline = FirstModuleBaseline(train_text, test_text, model, tokenizer,args.path_to_save)
-    first_module_baseline.get_Bm25_scores()
-    first_module_baseline.get_FAISS_scores()
+    #first_module_baseline = FirstModuleBaseline(train_text, test_text, model, tokenizer,args.path_to_save)
+    #first_module_baseline.get_Bm25_scores()
+    #first_module_baseline.get_FAISS_scores()
 
     first_module_tda = FirstModuleTDA(train_dataset,test_dataset,model,args.path_to_save)
     first_module_tda.get_IF_scores()

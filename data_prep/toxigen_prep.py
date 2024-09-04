@@ -57,7 +57,7 @@ def main():
     df = df.loc[df["generation"].str.len() != 0]
 
     plot_distr_by_group(df,var = "generation_method", title = "original_train",path_to_save=args.path_to_save)
-    plot_distr_by_group(df,var = "label", title = "original_train",path_to_save=args.path_to_save)
+    plot_distr_by_group(df,var = "prompt_label", title = "original_train",path_to_save=args.path_to_save)
 
     # Create a balanced dataset
     min_samples_alice = df.loc[df['generation_method']=="ALICE"].groupby('group').size().min()
@@ -95,7 +95,12 @@ def main():
 
     # Split the data into train and validation
 
-    train_df = df.sample(frac=0.8, random_state=args.seed)  
+    train_df = (
+                df.groupby(
+                    ['group','label'],group_keys=False)
+                    .apply(
+                           lambda x: x.sample(frac=0.8,random_state=args.seed))
+                )
     val_df = df.drop(train_df.index)
 
     plot_distr_by_group(train_df,var = "label", title = "train",path_to_save=args.path_to_save)
@@ -108,7 +113,7 @@ def main():
     # 2. Prepare test dataset
 
     test_df = load_dataset("toxigen/toxigen-data", "annotated")["train"].to_pandas()
-    test_df['label'] = 1*(train_df['toxicity_human'] > 2)
+    test_df['label'] = 1*(test_df['toxicity_human'] > 2)
     test_df = test_df.dropna(subset=["text","label","target_group"])
     test_df["text"] = [i[2:-1] for i in test_df["text"]]
     test_df = test_df.loc[test_df["text"].str.len() != 0]
@@ -126,7 +131,7 @@ def main():
                 )
     plot_distr_by_group(test_df,var = "label", title = "test",path_to_save=args.path_to_save)
 
-    test_df.to_csv(args.path_to_data+"test.csv", index=False)
+    test_df.to_csv(args.path_to_save+"test.csv", index=False)
 
 
 
