@@ -7,7 +7,7 @@ import argparse
 import sys
 import os
 current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.abspath(os.path.join(current_dir, '..')) 
+parent_dir = os.path.abspath(os.path.join(current_dir, '..'))
 sys.path.append(parent_dir)
 
 from utils.modules import FirstModuleBaseline, FirstModuleTDA
@@ -44,8 +44,8 @@ def parse_args():
 def main():
     args = parse_args()
 
-    #train_text = pd.read_csv(args.data_dir + "train.csv")["text"].to_list()
-    #test_text = pd.read_csv(args.data_dir + "test.csv")["text"].to_list()
+    train_text = pd.read_csv(args.data_dir + "train.csv")["text"].to_list()
+    test_text = pd.read_csv(args.data_dir + "test.csv")["text"].to_list()
 
     tokenizer = AutoTokenizer.from_pretrained(config.TOKENIZER_NAME, use_fast=True, trust_remote_code=True)
     
@@ -55,13 +55,13 @@ def main():
     # Load the model fine-tuned on toxigen dataset
     model = AutoModelForSequenceClassification.from_pretrained(args.checkpoint_dir,num_labels = 2).to(DEVICE)
     
-    #first_module_baseline = FirstModuleBaseline(train_text, test_text, model, tokenizer,args.path_to_save)
-    #first_module_baseline.get_Bm25_scores()
-    #first_module_baseline.get_FAISS_scores()
+    first_module_baseline = FirstModuleBaseline(train_text, test_text, model, tokenizer,args.path_to_save)
+    first_module_baseline.get_Bm25_scores()
+    first_module_baseline.get_FAISS_scores()
 
     first_module_tda = FirstModuleTDA(train_dataset,test_dataset,model,args.path_to_save)
     first_module_tda.get_IF_scores()
-    first_module_tda.get_TRAK_scores()
+    #first_module_tda.get_TRAK_scores()
 
 
 if __name__ == "__main__":

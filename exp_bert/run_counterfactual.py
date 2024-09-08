@@ -52,7 +52,7 @@ def main():
     """
     args = parse_args()
     
-    ks = list(range(200,1000,200)) + list(range(1000,10000,1000)) # there are 26,000 samples in the training set
+    ks = [50,100,150,200,350,500,650,800, 1100,1400]
 
     pretrained_model = AutoModelForSequenceClassification.from_pretrained(config.BASE_MODEL_NAME,num_labels = 2).to(DEVICE)
     finetuned_model = AutoModelForSequenceClassification.from_pretrained(args.checkpoint_dir,num_labels = 2).to(DEVICE)
@@ -68,9 +68,9 @@ def main():
     test_df = pd.read_csv(args.data_dir + "test.csv")
     test_group_indices = test_df['group'].astype('category').cat.codes.tolist()
 
-    for method in ["BM25","cosine","l2","IF","TRAK","random"]:
+    for method in ["TRAK"]:# ["BM25","cosine","l2","random","IF","TRAK"]:
 
-        os.mkdir(f"{args.output_dir}{method}_finetuning", exist_ok=True)
+        os.makedirs(f"{args.output_dir}{method}_finetuning", exist_ok=True)
 
         if method != "random":
             scores = torch.load(f"{args.output_dir}/{method}_scores.pt")
@@ -85,8 +85,7 @@ def main():
                 group_indices_val=test_group_indices,
                 scores=scores,
                 train_set_size=None,
-                val_set_size=None,
-                device=DEVICE)
+                val_set_size=None)
 
         df_acc = pd.DataFrame(columns = ["k","mean","std"])
         df_loss = pd.DataFrame(columns = ["k","mean","std"])
@@ -117,8 +116,8 @@ def main():
             losses_groups = {group:[] for group in groups}
 
             for i in range(5): # 5 runs for error bars
-                new_folder = f"{args.output_dir}{method}_finetuning/{k}/{i}"
-                os.mkdir(new_folder, exist_ok=True)
+                new_folder = f"{args.output_dir}{method}_finetuning/{k}/{i}/"
+                os.makedirs(new_folder, exist_ok=True)
         
                 seed = random.randint(0,1000)
                 finetune_model(train_dataset.select(debiased_train_idx),val_dataset,new_folder, random_seed=seed)

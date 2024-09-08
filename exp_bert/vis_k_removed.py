@@ -1,10 +1,16 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import utils.utils as utils
+
+import sys
+import os
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.abspath(os.path.join(current_dir, '..')) 
+sys.path.append(parent_dir)
+from utils import utils
 from transformers import AutoModelForSequenceClassification
 import torch
-import exp_bert.config as config
+import config
 import numpy as np
 import argparse
 
@@ -38,11 +44,12 @@ def parse_args():
 
 def main():
 
+    args = parse_args()
     plt.figure(figsize=(8, 6))
     sns.set_style("whitegrid")
 
 
-    base_model = AutoModelForSequenceClassification.from_pretrained(bert_finetuned_best,num_labels = 2).to(DEVICE)
+    base_model = AutoModelForSequenceClassification.from_pretrained(args.checkpoint_dir,num_labels = 2).to(DEVICE)
     base_model.eval()
 
     PATH_TO_DATA = "../../data/toxigen/" 
@@ -53,13 +60,12 @@ def main():
     base_model_acc = utils.compute_accuracy(base_model,test_dl)
 
     colors = sns.color_palette("Set1", n_colors=5)
-    methods = ["BM25","FAISS","IF","TRAK","random"]
-    #ks = list(range(10,50,10)) + list(range(50,750,50))
-    ks = [10,20,30,40,50,100,150,200]
+    methods = ["BM25","cosine","l2","IF","random"]
+    ks = [50,100,150,200,350,500,650,800, 1100,1400]
 
     for method,color in zip(methods, colors):
-        df_acc_method = pd.read_csv(f'../../output/{method}_finetuning/total_accuracy.csv')
-        df_acc_method["std"] = df_acc_method["std"]*5/2
+        df_acc_method = pd.read_csv(f'../../output_bert/toxigen/{method}_finetuning/total_accuracy.csv')
+        df_acc_method["std"] = df_acc_method["std"]
         df_acc_method = df_acc_method.loc[df_acc_method["k"].isin(ks)]
         plt.errorbar(df_acc_method["k"], df_acc_method["mean"], yerr=df_acc_method["std"], fmt='o', capsize=5, capthick=2, ecolor='gray', color = color)
         plt.plot([0]+df_acc_method["k"].to_list(), np.hstack([base_model_acc,df_acc_method["mean"]]), color = color, label = method)
@@ -71,13 +77,13 @@ def main():
     plt.legend()
 
     plt.tight_layout()
-    plt.savefig(f'../vis/total_accuracy.png')
+    plt.savefig(f'../vis/vis_bert_toxigen/total_accuracy.png')
 
 
     data_groups = pd.DataFrame(columns=["method","k","acc","std"])
 
     for method in methods:
-        df_acc_method_groups = pd.read_csv(f'../../output/{method}_finetuning/accuracy_by_groups.csv')
+        df_acc_method_groups = pd.read_csv(f'../../output_bert/toxigen/{method}_finetuning/accuracy_by_groups.csv')
         df_acc_method_groups = df_acc_method_groups.loc[df_acc_method_groups["k"].isin(ks)]
         df_acc_method_groups["method"] = method
         df_acc_method_groups["std"] = df_acc_method_groups["std"]*5/2
@@ -104,7 +110,7 @@ def main():
         plt.xticks(ks)
         plt.legend()
         plt.tight_layout()
-        plt.savefig(f'../vis/{group}_accuracy.png')
+        plt.savefig(f'../vis/vis_bert_toxigen/{group}_accuracy.png')
 
 if __name__ == "__main__":
     main()

@@ -24,12 +24,12 @@ from typing import List, Optional, Tuple
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-
 import sys
 import os
 current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.abspath(os.path.join(current_dir, '..'))
+parent_dir = os.path.abspath(os.path.join(current_dir, '..')) 
 sys.path.append(parent_dir)
+
 from utils.utils import get_dataloader
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -222,7 +222,7 @@ class FirstModuleTDA():
         analyzer.fit_all_factors(
                     factors_name="ekfac",
                     dataset=self.train_dataset,
-                    per_device_batch_size=64,
+                    per_device_batch_size=16,
                     overwrite_output_dir=True,
                 )
 
@@ -242,8 +242,8 @@ class FirstModuleTDA():
             query_dataset=self.test_dataset,
             #query_indices=list(range(min([len(self.val_dataset), 2000]))),
             train_dataset=self.train_dataset,
-            per_device_query_batch_size=32,
-            per_device_train_batch_size=32,
+            per_device_query_batch_size=16,
+            per_device_train_batch_size=16,
             overwrite_output_dir=False,
         )
         scores = analyzer.load_pairwise_scores(scores_name)["all_modules"]
@@ -262,7 +262,7 @@ class FirstModuleTDA():
             def __init__(self,model):
                 super().__init__()
                 self.model = model
-                self.model.eval().to(DEVICE)
+                self.model.eval()
 
             def forward(self, input_ids, token_type_ids, attention_mask):
                 return self.model(input_ids=input_ids,
@@ -276,8 +276,8 @@ class FirstModuleTDA():
         def process_batch(batch):
             return batch['input_ids'], batch['token_type_ids'], batch['attention_mask'], batch['labels']
 
-        train_dataloader = get_dataloader(self.train_dataset, 8,shuffle=False)
-        test_dataloader = get_dataloader(self.test_dataset, 8, shuffle=False)
+        train_dataloader = get_dataloader(self.train_dataset, 4,shuffle=False)
+        test_dataloader = get_dataloader(self.test_dataset, 4, shuffle=False)
 
         traker = TRAKer(model=model,
                         task="text_classification",
@@ -300,10 +300,12 @@ class FirstModuleTDA():
                                         model_id=0,
                                         num_targets=self.test_dataset.num_rows)
         
+        torch.cuda.empty_cache()
         for batch in tqdm(test_dataloader, desc='Scoring..'):
             batch = process_batch(batch)
             batch = [x.to(DEVICE) for x in batch]
             traker.score(batch=batch, num_samples=batch[0].shape[0])
+            torch.cuda.empty_cache()
 
         scores = traker.finalize_scores(exp_name='trak_exp')
         torch.save(scores.T, self.path_to_save + 'TRAK_scores.pt')
