@@ -61,7 +61,7 @@ def main():
 
     first_module_tda = FirstModuleTDA(train_dataset,test_dataset,model,args.path_to_save)
     first_module_tda.get_IF_scores()
-    #first_module_tda.get_TRAK_scores()
+    first_module_tda.get_TRAK_scores()
 
 
 if __name__ == "__main__":

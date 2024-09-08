@@ -38,7 +38,7 @@ python train.py --checkpoint_dir ../../output_bert/toxigen/base/ \
 
 ```bash
 python compute_firstmod_scores.py --checkpoint_dir ../../output_bert/toxigen/base/best_checkpoint \
-    --data_dir ../../data/toxigen/
+    --data_dir ../../data/toxigen/ \
     --path_to_save ../../output_bert/toxigen/
 ```
 
@@ -46,6 +46,14 @@ python compute_firstmod_scores.py --checkpoint_dir ../../output_bert/toxigen/bas
 
 ```bash
 python run_counterfactual.py --checkpoint_dir ../../output_bert/toxigen/base/best_checkpoint \
-        --data_dir ../../data/toxigen/
+        --data_dir ../../data/toxigen/ \
+        --output_dir ../../output_bert/toxigen/
+```
+
+and plot the results
+
+```bash
+python vis_k_removed.py --checkpoint_dir ../../output_bert/toxigen/base/best_checkpoint \
+        --data_dir ../../data/toxigen/ \
         --output_dir ../../output_bert/toxigen/
 ```

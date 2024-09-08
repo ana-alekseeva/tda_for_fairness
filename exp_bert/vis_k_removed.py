@@ -7,8 +7,8 @@ import os
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.abspath(os.path.join(current_dir, '..')) 
 sys.path.append(parent_dir)
-from utils import utils
-from transformers import AutoModelForSequenceClassification
+from utils import get_dataset, get_dataloader, compute_accuracy
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 import torch
 import config
 import numpy as np
@@ -51,16 +51,16 @@ def main():
 
     base_model = AutoModelForSequenceClassification.from_pretrained(args.checkpoint_dir,num_labels = 2).to(DEVICE)
     base_model.eval()
+    tokenizer = AutoTokenizer.from_pretrained(config.TOKENIZER_NAME, use_fast=True, trust_remote_code=True)
 
-    PATH_TO_DATA = "../../data/toxigen/" 
-    test_df = pd.read_csv(PATH_TO_DATA + "test.csv")
-    test_dataset = dp.get_toxigen_dataset("test") 
+    test_df = pd.read_csv(args.data_dir + "test.csv")
+    test_dataset = get_dataset(tokenizer,config.MAX_LENGTH,args.data_dir,"test")
+    test_dl = get_dataloader(test_dataset, 32, shuffle=False)
 
-    test_dl = dp.get_dataloader(test_dataset, config.BATCH_SIZE)
-    base_model_acc = utils.compute_accuracy(base_model,test_dl)
+    base_model_acc = compute_accuracy(base_model,test_dl)
 
-    colors = sns.color_palette("Set1", n_colors=5)
-    methods = ["BM25","cosine","l2","IF","random"]
+    colors = sns.color_palette("Set1", n_colors=6)
+    methods = ["BM25","cosine","l2","IF","TRAK","random"]
     ks = [50,100,150,200,350,500,650,800, 1100,1400]
 
     for method,color in zip(methods, colors):
@@ -93,8 +93,8 @@ def main():
         df_group = data_groups.loc[df_acc_method_groups["group"] == group]
         
         g_indices = test_df.index[test_df["target_group"] == group].tolist()
-        test_dl_group = dp.get_dataloader(test_dataset.select(g_indices), config.BATCH_SIZE)
-        base_model_acc_group = utils.compute_accuracy(base_model,test_dl_group)
+        test_dl_group = get_dataloader(test_dataset.select(g_indices), 32)
+        base_model_acc_group = compute_accuracy(base_model,test_dl_group)
 
         plt.figure(figsize=(8, 6))
         sns.set_style("whitegrid")
