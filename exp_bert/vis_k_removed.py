@@ -7,7 +7,7 @@ import os
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.abspath(os.path.join(current_dir, '..')) 
 sys.path.append(parent_dir)
-from utils import get_dataset, get_dataloader, compute_accuracy
+from utils.utils import get_dataset, get_dataloader, compute_accuracy
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 import torch
 import config
@@ -57,7 +57,7 @@ def main():
     test_dataset = get_dataset(tokenizer,config.MAX_LENGTH,args.data_dir,"test")
     test_dl = get_dataloader(test_dataset, 32, shuffle=False)
 
-    base_model_acc = compute_accuracy(base_model,test_dl)
+    base_model_acc = compute_accuracy(base_model,test_dl,DEVICE)
 
     colors = sns.color_palette("Set1", n_colors=6)
     methods = ["BM25","cosine","l2","IF","TRAK","random"]
@@ -86,15 +86,15 @@ def main():
         df_acc_method_groups = pd.read_csv(f'../../output_bert/toxigen/{method}_finetuning/accuracy_by_groups.csv')
         df_acc_method_groups = df_acc_method_groups.loc[df_acc_method_groups["k"].isin(ks)]
         df_acc_method_groups["method"] = method
-        df_acc_method_groups["std"] = df_acc_method_groups["std"]*5/2
+        df_acc_method_groups["std"] = df_acc_method_groups["std"]
         data_groups = pd.concat([data_groups,df_acc_method_groups],axis=0)
 
     for group in data_groups["group"].unique():
-        df_group = data_groups.loc[df_acc_method_groups["group"] == group]
+        df_group = data_groups.loc[data_groups["group"] == group]
         
-        g_indices = test_df.index[test_df["target_group"] == group].tolist()
+        g_indices = test_df.index[test_df["group"] == group].tolist()
         test_dl_group = get_dataloader(test_dataset.select(g_indices), 32)
-        base_model_acc_group = compute_accuracy(base_model,test_dl_group)
+        base_model_acc_group = compute_accuracy(base_model,test_dl_group,DEVICE)
 
         plt.figure(figsize=(8, 6))
         sns.set_style("whitegrid")
