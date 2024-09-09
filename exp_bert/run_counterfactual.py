@@ -68,7 +68,7 @@ def main():
     test_df = pd.read_csv(args.data_dir + "test.csv")
     test_group_indices = test_df['group'].astype('category').cat.codes.tolist()
 
-    for method in ["TRAK"]:# ["BM25","cosine","l2","random","IF","TRAK"]:
+    for method in ["random"]:
 
         os.makedirs(f"{args.output_dir}{method}_finetuning", exist_ok=True)
 
