@@ -90,5 +90,6 @@ def main():
 
     train_df.to_csv(f'{args.path_to_save}examples.csv')
 
-
+if __name__ == "__main__":
+    main()
 
