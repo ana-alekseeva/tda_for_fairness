@@ -91,6 +91,7 @@ def main():
         df_loss = pd.DataFrame(columns = ["k","mean","std"])
         df_acc_groups = pd.DataFrame(columns = ["group","k","mean","std"])
         df_loss_groups = pd.DataFrame(columns = ["group","k","mean","std"])
+        # ADD FPR and FNR
         groups = test_df['group'].unique()
         
         def get_dataloader_group(group):

@@ -135,7 +135,7 @@ def compute_accuracy_and_loss(model, dataloader, device="cuda"):
             true_labels.extend(batch['labels'].cpu().numpy())
             
     accuracy = sum(np.array(true_labels) == np.array(predictions) ) / len(predictions)
-    average_loss = total_loss / num_batches if num_batches > 0 else 0.0
+    average_loss = total_loss / len(predictions)
     return accuracy, average_loss
 
 def compute_predictions(model, dataloader, device="cuda"):

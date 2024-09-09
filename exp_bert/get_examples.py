@@ -88,7 +88,7 @@ def main():
         train_df[method] = group_alignment_scores
 
 
-    train_df.to_csv('../../output/examples.csv')
+    train_df.to_csv(f'{args.path_to_save}examples.csv')
 
 
 
