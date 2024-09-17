@@ -60,7 +60,7 @@ def main():
     base_model_acc = compute_accuracy(base_model,test_dl,DEVICE)
 
     colors = sns.color_palette("Set1", n_colors=6)
-    methods = ["cosine","l2","IF","TRAK","random"]
+    methods = ["IF","TRAK","random"]
     ks = [50,100,150,200,350,500,650,800, 1100,1400]
 
     for method,color in zip(methods, colors):

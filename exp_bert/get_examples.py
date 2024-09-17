@@ -48,15 +48,15 @@ def main():
 
     test_df = pd.read_csv(args.data_dir + "test.csv")
     train_df  = pd.read_csv(args.data_dir + "train.csv")
-    train_group_indices = train_df['target_group'].astype('category').cat.codes.tolist()
-    test_group_indices = test_df['target_group'].astype('category').cat.codes.tolist()
+    train_group_indices = train_df['group'].astype('category').cat.codes.tolist()
+    test_group_indices = test_df['group'].astype('category').cat.codes.tolist()
 
     test_dataset = get_dataset(tokenizer,config.MAX_LENGTH,args.data_dir,"test")
     train_dataset = get_dataset(tokenizer,config.MAX_LENGTH,args.data_dir,"train")
     test_dl = get_dataloader(test_dataset, 32, shuffle=False)
     train_dl = get_dataloader(train_dataset, 32, shuffle=False)
 
-    model = AutoModelForSequenceClassification.from_pretrained(args.checkpoint_dir,num_labels = 2).to("cuda")    
+    model = AutoModelForSequenceClassification.from_pretrained(args.checkpoint_dir,num_labels = 2).to(DEVICE)    
     model.eval()
 
     for method in ["BM25","l2","cosine","IF","TRAK"]:
@@ -72,8 +72,7 @@ def main():
                     group_indices_val=test_group_indices,
                     scores=scores,
                     train_set_size=None,
-                    val_set_size=None,
-                    device="cuda")
+                    val_set_size=None)
 
         group_losses = d3m.get_group_losses(
                                 model=d3m.model,
