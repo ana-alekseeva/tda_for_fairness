@@ -77,7 +77,7 @@ def finetune_model(train_dataset,val_dataset,output_dir, random_seed=42):
         learning_rate=config.LEARNING_RATE,
         per_device_train_batch_size=config.TRAIN_BATCH_SIZE,
         per_device_eval_batch_size=config.VAL_BATCH_SIZE,
-        num_train_epochs=5,
+        num_train_epochs=config.NUM_EPOCHS,
         weight_decay=config.WEIGHT_DECAY,
         seed = random_seed,
         report_to="none",
@@ -116,7 +116,6 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(config.TOKENIZER_NAME, use_fast=True, trust_remote_code=True)
     train_dataset = get_dataset(tokenizer,config.MAX_LENGTH,args.data_dir,"train")
     val_dataset = get_dataset(tokenizer,config.MAX_LENGTH,args.data_dir,"val")
-    val_dl = get_dataloader(val_dataset, config.VAL_BATCH_SIZE)
 
     finetune_model(train_dataset,val_dataset,args.checkpoint_dir, random_seed=args.seed)
 

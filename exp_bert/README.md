@@ -14,8 +14,8 @@ pip install -r requirements.txt
 To generate train, validation and test datasets used in the study do the following:
 
 ```bash
-python toxigen_prep.py --train_samples_per_group 2000\
-    --test_samples_per_group 100 \
+python toxigen_prep.py --train_samples_per_group 800\
+    --test_samples_per_group 50 \
     --path_to_save ../../data/toxigen/ \
     --seed 42
 ```
@@ -47,7 +47,8 @@ python compute_firstmod_scores.py --checkpoint_dir ../../output_bert/toxigen/bas
 ```bash
 python run_counterfactual.py --checkpoint_dir ../../output_bert/toxigen/base/best_checkpoint \
         --data_dir ../../data/toxigen/ \
-        --output_dir ../../output_bert/toxigen/
+        --output_dir ../../output_bert/toxigen/ \
+        --method IF
 ```
 
 and plot the results

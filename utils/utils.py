@@ -6,6 +6,7 @@ import torch
 import pandas as pd
 import matplotlib.pyplot as plt
 from typing import List
+from sklearn.metrics import roc_auc_score
 
 def get_dataloader(dataset, batch_size, shuffle=True):
     def collate_fn(batch):
@@ -114,7 +115,7 @@ def compute_accuracy(model, dataloader, device="cuda"):
 
     return sum(np.array(true_labels) == np.array(predictions) ) / len(predictions)
 
-def compute_accuracy_and_loss(model, dataloader, device="cuda"):
+def compute_metrics(model, dataloader, device="cuda"):
     predictions = []
     true_labels = []
     total_loss = 0.0
@@ -136,7 +137,12 @@ def compute_accuracy_and_loss(model, dataloader, device="cuda"):
             
     accuracy = sum(np.array(true_labels) == np.array(predictions) ) / len(predictions)
     average_loss = total_loss / len(predictions)
-    return accuracy, average_loss
+    fpr = sum((np.array(true_labels) == 0) & (np.array(predictions) == 1)) / sum(np.array(true_labels) == 0)
+    fnr = sum((np.array(true_labels) == 1) & (np.array(predictions) == 0)) / sum(np.array(true_labels) == 1)
+    auc = roc_auc_score(true_labels, predictions)
+    
+    return accuracy, average_loss, fpr, fnr, auc
+
 
 def compute_predictions(model, dataloader, device="cuda"):
     predictions = []
