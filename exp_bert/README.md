@@ -77,7 +77,8 @@ srun --gpus=1 --partition=a100-galvani --time=14:00:00 --output=random_job_outpu
 and plot the results
 
 ```bash
-python vis_k_removed.py --checkpoint_dir ../../output_bert/toxigen/base/best_checkpoint \
+python vis_k_removed_json.py --checkpoint_dir ../../output_bert/toxigen/base/best_checkpoint \
         --data_dir ../../data/toxigen/ \
-        --output_dir ../../output_bert/toxigen/
+        --results_dir ../../output_bert/toxigen/ \
+        --path_to_save ../vis/vis_bert_toxigen/
 ```
