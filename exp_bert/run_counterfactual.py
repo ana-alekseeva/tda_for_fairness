@@ -71,8 +71,8 @@ def main():
     train_dataset = get_dataset(tokenizer,config.MAX_LENGTH,args.data_dir,"train")
     val_dataset = get_dataset(tokenizer,config.MAX_LENGTH,args.data_dir,"val")
     test_dataset = get_dataset(tokenizer,config.MAX_LENGTH,args.data_dir,"test")
-    train_dl = get_dataloader(test_dataset, config.TRAIN_BATCH_SIZE)
-    test_dl = get_dataloader(test_dataset, config.TEST_BATCH_SIZE)
+    train_dl = get_dataloader(train_dataset, config.TRAIN_BATCH_SIZE,shuffle=False)
+    test_dl = get_dataloader(test_dataset, config.TEST_BATCH_SIZE,shuffle=False)
 
     train_group_indices = pd.read_csv(args.data_dir + "train.csv")['group'].astype('category').cat.codes.tolist()
     test_df = pd.read_csv(args.data_dir + "test.csv")
@@ -95,6 +95,8 @@ def main():
             scores=scores,
             train_set_size=None,
             val_set_size=None)
+        
+        assert d3m.debias(num_to_discard=0) == len(train_dataset)
 
     dict_metrics = {k:
                      {
@@ -124,7 +126,7 @@ def main():
     
     def get_dataloader_group(group):
         g_indices = test_df.index[test_df["group"] == group].tolist()
-        g_test_dl = get_dataloader(test_dataset.select(g_indices), config.TEST_BATCH_SIZE)
+        g_test_dl = get_dataloader(test_dataset.select(g_indices), config.TEST_BATCH_SIZE,shuffle=False)
         return g_test_dl
 
     test_dl_groups = {group:get_dataloader_group(group) for group in groups} 
