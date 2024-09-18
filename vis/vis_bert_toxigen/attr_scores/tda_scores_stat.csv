@@ -1,0 +1,3 @@
+,sample,min,mean,max,std
+IF,test,tensor(-107797.7031),tensor(454.6816),tensor(115555.1797),tensor(26247.7617)
+TRAK,test,-0.001303,-1.51e-05,0.001242,0.0002441

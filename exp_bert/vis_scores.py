@@ -77,17 +77,17 @@ def main():
     df_d3m_scores_stat = pd.DataFrame(columns=["min","mean","max", "std"])
 
     for method in ["IF", "TRAK"]:
-        scores = torch.load(f"{args.output_dir}/{args.method}_scores.pt")
+        scores = torch.load(f"{args.output_dir}/{method}_scores.pt")
         assert scores.shape[0] < scores.shape[1]
 
         groups = list(test_df["group"].unique())
 
         # 1.a. Distribution of TDA scores for training samples (averaged over test samples): histograms and a table of means and stds
-        scores_train = scores.mean(axis=0).cpu().numpy()
-        assert scores.shape[1] == scores_train[0]
-
+        scores_train = scores.mean(axis=0)
+        # assert scores.shape[1] == scores_train[0]
+        
         # 1.b. Distribution of TDA scores for test samples (averaged over trainng samples): histograms and a table of means and stds
-        scores_test = scores.mean(axis=1).cpu().numpy()
+        scores_test = scores.mean(axis=1)
 
         # Plotting histograms
         sns.set_style("whitegrid")
@@ -104,7 +104,7 @@ def main():
 
         # 2. Distribution of TDA scores for training samples (averages) by group: histograms and a table of means and stds
         for group in groups:
-            scores_group = scores[test_df["group"] == group].mean(axis=0).cpu().numpy()
+            scores_group = scores[test_df["group"] == group].mean(axis=0)
             sns.set_style("whitegrid")
             fig, ax = plt.subplots(figsize=(12, 6))
             ax.hist(scores_group, bins=50, alpha=0.7, color='blue', label='Training Samples')
