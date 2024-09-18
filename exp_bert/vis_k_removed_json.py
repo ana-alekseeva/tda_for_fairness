@@ -66,7 +66,7 @@ def main():
     methods = ["IF","TRAK","random"]
     colors = sns.color_palette("Set1", n_colors=len(methods))
 
-    ks = [0,50, 100, 200, 300, 400, 500, 1000, 3000, 5000, 7000]
+    #ks = [0,50, 100, 200, 300, 400, 500, 1000, 3000, 5000, 7000]
 
     for i,metric in enumerate(["accuracy","loss","fpr","fnr","auc"]):
         os.makedirs(args.path_to_save + metric, exist_ok=True)
@@ -79,21 +79,22 @@ def main():
                 data = json.load(f)
             
             means_by_k = []
+            ks = sorted(list(data.keys()))
 
-            for k in data.keys():
+            for k in ks:
                 m = np.mean(data[k][metric])
                 means_by_k.append(m)
             
-            plt.plot(ks, np.hstack([base_model_metrics[i],means_by_k]), color = color, label = method)
+            plt.plot(['0']+ks, np.hstack([base_model_metrics[i],means_by_k]), color = color, label = method)
 
         plt.xlabel('K Removed Training Samples')
         plt.ylabel(metric)
         plt.title(metric)
-        plt.xticks(ks)
+        plt.xticks(['0']+ks)
         plt.legend()
 
         plt.tight_layout()
-        plt.savefig(f'{args.path_to_save+metric}"total_{metric}".pdf')
+        plt.savefig(f'{args.path_to_save}{metric}/total_{metric}.pdf')
 
 
 
@@ -113,21 +114,21 @@ def main():
                     data = json.load(f)
                 
                 means_by_k = []
-
-                for k in data.keys():
+                ks = sorted(list(data.keys()))
+                for k in ks:
                     m = np.mean(data[k][group][metric])
                     means_by_k.append(m)
                 
-                plt.plot(ks, np.hstack([base_model_metrics_group[i],means_by_k]), color = color, label = method)
+                plt.plot(['0']+ks, np.hstack([base_model_metrics_group[i],means_by_k]), color = color, label = method)
 
             plt.xlabel('K Removed Training Samples')
             plt.ylabel(metric)
             plt.title(f"{metric}: {group}")
-            plt.xticks(ks)
+            plt.xticks(['0']+ks)
             plt.legend()
 
             plt.tight_layout()
-            plt.savefig(f'{args.path_to_save+metric}"{group}_{metric}".pdf')
+            plt.savefig(f'{args.path_to_save}{metric}/{group}_{metric}.pdf')
 
 
 
