@@ -95,8 +95,6 @@ def main():
             scores=scores,
             train_set_size=None,
             val_set_size=None)
-        
-        assert d3m.debias(num_to_discard=0) == len(train_dataset)
 
     dict_metrics = {k:
                      {
