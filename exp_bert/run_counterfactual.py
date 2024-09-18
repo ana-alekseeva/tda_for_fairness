@@ -64,8 +64,7 @@ def main():
     """
     args = parse_args()
     
-    ks = [100,200,300,400,500, 600, 700,800, 900, 1000, 2000, 3000, 4000, 5000, 6000, 7000]
-
+    ks = [50,100,200,300,400,500, 1000, 3000, 5000, 7000]
     finetuned_model = AutoModelForSequenceClassification.from_pretrained(args.checkpoint_dir,num_labels = 2).to(DEVICE)
     tokenizer = AutoTokenizer.from_pretrained(config.TOKENIZER_NAME, use_fast=True, trust_remote_code=True)
 
@@ -108,6 +107,8 @@ def main():
                     for k in ks
                     }
     
+    groups = test_df['group'].unique()
+
     dict_metrics_groups = {k: {
                     group:
                      {
@@ -120,8 +121,6 @@ def main():
                     for group in groups}
                     for k in ks
                     }
-
-    groups = test_df['group'].unique()
     
     def get_dataloader_group(group):
         g_indices = test_df.index[test_df["group"] == group].tolist()
@@ -169,12 +168,11 @@ def main():
             shutil.rmtree(new_folder)
 
 
-    with open(f"{args.output_dir}{args.method}_finetuning/metrics_total.json", 'w') as f:
-        json.dump(dict_metrics, f)
+        with open(f"{args.output_dir}{args.method}_finetuning/metrics_total_{k}.json", 'w') as f:
+            json.dump(dict_metrics, f)
 
-    # Load the dictionary from a file
-    with open(f"{args.output_dir}{args.method}_finetuning/metrics_groups.json", 'w') as f:
-        json.dump(dict_metrics, f)
+        with open(f"{args.output_dir}{args.method}_finetuning/metrics_groups_{k}.json", 'w') as f:
+            json.dump(dict_metrics_groups, f)
 
 if __name__ == "__main__":
     main()

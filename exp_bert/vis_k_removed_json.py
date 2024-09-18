@@ -33,6 +33,13 @@ def parse_args():
         help="A path to load training and validation data from.",
     )
     parser.add_argument(
+        "--data_dir",
+        type=str,
+        default="../../data/toxigen/",
+        help="A path to load training and validation data from.",
+    )
+    
+    parser.add_argument(
         "--path_to_save",
         type=str,
         default="../vis/vis_bert_toxigen/",
@@ -59,7 +66,7 @@ def main():
     methods = ["IF","TRAK","random"]
     colors = sns.color_palette("Set1", n_colors=len(methods))
 
-    ks = [0,100,200,300,400,500, 600, 700,800, 900, 1000, 2000, 3000, 4000, 5000, 6000, 7000]
+    ks = [0,50, 100, 200, 300, 400, 500, 1000, 3000, 5000, 7000]
 
     for i,metric in enumerate(["accuracy","loss","fpr","fnr","auc"]):
         os.makedirs(args.path_to_save + metric, exist_ok=True)
