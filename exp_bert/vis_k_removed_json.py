@@ -79,7 +79,8 @@ def main():
                 data = json.load(f)
             
             means_by_k = []
-            ks = sorted(list(data.keys()))
+            ks = sorted([int(i) for i in data.keys()])
+            ks = [str(i) for i in ks]
 
             for k in ks:
                 m = np.mean(data[k][metric])
@@ -114,7 +115,9 @@ def main():
                     data = json.load(f)
                 
                 means_by_k = []
-                ks = sorted(list(data.keys()))
+                ks = sorted([int(i) for i in data.keys()])
+                ks = [str(i) for i in ks]
+
                 for k in ks:
                     m = np.mean(data[k][group][metric])
                     means_by_k.append(m)
