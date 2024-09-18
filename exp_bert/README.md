@@ -51,6 +51,29 @@ python run_counterfactual.py --checkpoint_dir ../../output_bert/toxigen/base/bes
         --method IF
 ```
 
+```bash
+srun --gpus=1 --partition=a100-galvani --time=14:00:00 --output=if_job_output --error=if_job_errors sh -c "source ~/.bashrc && conda activate ../../env && python3 /mnt/lustre/work/oh/owl982/tda_for_fairness/exp_bert/run_counterfactual.py --checkpoint_dir ../../output_bert/toxigen/base/best_checkpoint \
+    --data_dir ../../data/toxigen/ \
+    --output_dir ../../output_bert/toxigen/\
+    --method IF \
+    --num_runs 3
+    "&
+
+srun --gpus=1 --partition=a100-galvani --time=14:00:00 --output=trak_job_output --error=trak_job_errors sh -c "source ~/.bashrc && conda activate ../../env && python3 /mnt/lustre/work/oh/owl982/tda_for_fairness/exp_bert/run_counterfactual.py --checkpoint_dir ../../output_bert/toxigen/base/best_checkpoint \
+    --data_dir ../../data/toxigen/ \
+    --output_dir ../../output_bert/toxigen/\
+    --method TRAK \
+    --num_runs 3
+    "&
+
+srun --gpus=1 --partition=a100-galvani --time=14:00:00 --output=random_job_output --error=random_job_errors sh -c "source ~/.bashrc && conda activate ../../env && python3 /mnt/lustre/work/oh/owl982/tda_for_fairness/exp_bert/run_counterfactual.py --checkpoint_dir ../../output_bert/toxigen/base/best_checkpoint \
+    --data_dir ../../data/toxigen/ \
+    --output_dir ../../output_bert/toxigen/\
+    --method random \
+    --num_runs 3
+    "&
+```
+
 and plot the results
 
 ```bash

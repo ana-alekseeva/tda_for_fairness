@@ -61,7 +61,7 @@ def main():
 
     colors = sns.color_palette("Set1", n_colors=6)
     methods = ["IF","TRAK","random"]
-    ks = [50,100,150,200,350,500,650,800, 1100,1400]
+    ks = [100,200,300,400,500, 600, 700,800, 900, 1000, 2000, 3000, 4000, 5000, 6000, 7000]
 
     for method,color in zip(methods, colors):
         df_acc_method = pd.read_csv(f'../../output_bert/toxigen/{method}_finetuning/total_accuracy.csv')
