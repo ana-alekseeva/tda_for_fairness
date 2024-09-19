@@ -74,7 +74,7 @@ def main():
     df_tda_scores_stat = pd.DataFrame(columns=["min","mean","max", "std"])
     df_tda_scores_group_stat = pd.DataFrame(columns=["min","mean","max", "std"])
     df_d3m_scores_stat = pd.DataFrame(columns=["min","mean","max", "std"])
-
+    d3m_scores = {}
     for method in ["IF", "TRAK"]:
         try:
             scores = torch.load(f"{args.output_dir}/{method}_scores.pt").numpy()
@@ -102,8 +102,8 @@ def main():
        # fig.savefig(f'{args.path_to_save}attr_scores/Distribution_of_{method}_scores.pdf')
 
         # Table of means and stds
-        df_tda_scores_stat.loc[(method,"train")] = [scores_train.min(), scores_train.mean(), scores_train.max(), scores_train.std()]
-        df_tda_scores_stat.loc[(method,"test")] = [scores_test.min(), scores_test.mean(), scores_test.max(), scores_test.std()]
+        df_tda_scores_stat.loc[method + "_train"] = [scores_train.min(), scores_train.mean(), scores_train.max(), scores_train.std()]
+        df_tda_scores_stat.loc[method + "_test"] = [scores_test.min(), scores_test.mean(), scores_test.max(), scores_test.std()]
 
         # 2. Distribution of TDA scores for training samples (averages) by group: histograms and a table of means and stds
         for group in groups:
@@ -115,7 +115,7 @@ def main():
         #    ax.legend()
         #    fig.savefig(f'{args.path_to_save}attr_scores/Distribution_of_{method}_scores_{group}.pdf')
 
-            df_tda_scores_group_stat.loc[(method,group)] = [scores_group.min(), scores_group.mean(), scores_group.max(), scores_group.std()]
+            df_tda_scores_group_stat.loc[method + "_" + group] = [scores_group.min(), scores_group.mean(), scores_group.max(), scores_group.std()]
 
 
         # 3. Distribution of group attribution scores for training samples: histograms and a table of means and stds 
@@ -137,7 +137,6 @@ def main():
             group_indices=d3m.group_indices_val,
         )
 
-        d3m_scores = {}
         d3m_scores[method] = d3m.compute_group_alignment_scores(d3m.scores, d3m.group_indices_val, group_losses)
 
         #sns.set_style("whitegrid")
