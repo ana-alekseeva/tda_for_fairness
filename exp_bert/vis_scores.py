@@ -156,7 +156,7 @@ def main():
     df_tda_scores_group_stat.to_csv(f'{args.path_to_save}attr_scores/tda_scores_group_stat.csv')
     df_d3m_scores_stat.to_csv(f'{args.path_to_save}attr_scores/d3m_scores_stat.csv')
 
-    corr = np.correlate(d3m_scores["TRAK"], d3m_scores["IF"])
+    corr = np.corrcoef(d3m_scores["TRAK"], d3m_scores["IF"])
     with open(f'{args.path_to_save}attr_scores/correlation.txt', 'w') as f:
         f.write(f'Correlation between D3M scores with TRAK and IF: {corr}')
 
