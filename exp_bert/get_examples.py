@@ -59,7 +59,7 @@ def main():
     model = AutoModelForSequenceClassification.from_pretrained(args.checkpoint_dir,num_labels = 2).to(DEVICE)    
     model.eval()
 
-    for method in ["BM25","l2","cosine","IF","TRAK"]:
+    for method in ["IF","TRAK"]:
         scores = torch.load(f"{args.path_to_save}{method}_scores.pt")
         scores = scores.T
 

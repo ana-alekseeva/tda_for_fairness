@@ -137,7 +137,8 @@ def main():
             group_indices=d3m.group_indices_val,
         )
 
-        d3m_scores = d3m.compute_group_alignment_scores(d3m.scores, d3m.group_indices_val, group_losses)
+        d3m_scores = {}
+        d3m_scores[method] = d3m.compute_group_alignment_scores(d3m.scores, d3m.group_indices_val, group_losses)
 
         #sns.set_style("whitegrid")
         #fig, ax = plt.subplots(figsize=(12, 6))
@@ -146,14 +147,19 @@ def main():
         #ax.legend()
         #fig.savefig(f'{args.path_to_save}attr_scores/Distribution_of_d3m_scores_{method}.pdf')
 
-        df_d3m_scores_stat.loc[method] = [d3m_scores.min(), d3m_scores.mean(), d3m_scores.max(), d3m_scores.std()]
+        df_d3m_scores_stat.loc[method] = [d3m_scores[method].min(), 
+                                          d3m_scores[method].mean(), 
+                                          d3m_scores[method].max(), 
+                                          d3m_scores[method].std()]
 
  
     df_tda_scores_stat.to_csv(f'{args.path_to_save}attr_scores/tda_scores_stat.csv')
     df_tda_scores_group_stat.to_csv(f'{args.path_to_save}attr_scores/tda_scores_group_stat.csv')
     df_d3m_scores_stat.to_csv(f'{args.path_to_save}attr_scores/d3m_scores_stat.csv')
 
-
+    corr = np.correlate(d3m_scores["TRAK"], d3m_scores["IF"])
+    with open(f'{args.path_to_save}attr_scores/correlation.txt', 'w') as f:
+        f.write(f'Correlation between D3M scores with TRAK and IF: {corr}')
 
     # 5. Create a table with metrics by group for test samples and the fine-tuned base model
     df_metrics_group = pd.DataFrame(columns=["accuracy","loss","fpr","fnr","auc"])
