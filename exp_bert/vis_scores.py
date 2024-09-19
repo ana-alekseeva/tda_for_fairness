@@ -61,9 +61,8 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(config.TOKENIZER_NAME, use_fast=True, trust_remote_code=True)
 
     train_dataset = get_dataset(tokenizer,config.MAX_LENGTH,args.data_dir,"train")
-    val_dataset = get_dataset(tokenizer,config.MAX_LENGTH,args.data_dir,"val")
     test_dataset = get_dataset(tokenizer,config.MAX_LENGTH,args.data_dir,"test")
-    train_dl = get_dataloader(test_dataset, config.TRAIN_BATCH_SIZE,shuffle=False)
+    train_dl = get_dataloader(train_dataset, config.TRAIN_BATCH_SIZE,shuffle=False)
     test_dl = get_dataloader(test_dataset, config.TEST_BATCH_SIZE,shuffle=False)
 
     train_group_indices = pd.read_csv(args.data_dir + "train.csv")['group'].astype('category').cat.codes.tolist()
@@ -72,12 +71,16 @@ def main():
 
     os.makedirs(f"{args.path_to_save}attr_scores", exist_ok=True)
     
-    df_tda_scores_stat = pd.DataFrame(columns=["sample","min","mean","max", "std"])
-    df_tda_scores_group_stat = pd.DataFrame(columns=["group","min","mean","max", "std"])
+    df_tda_scores_stat = pd.DataFrame(columns=["min","mean","max", "std"])
+    df_tda_scores_group_stat = pd.DataFrame(columns=["min","mean","max", "std"])
     df_d3m_scores_stat = pd.DataFrame(columns=["min","mean","max", "std"])
 
     for method in ["IF", "TRAK"]:
-        scores = torch.load(f"{args.output_dir}/{method}_scores.pt")
+        try:
+            scores = torch.load(f"{args.output_dir}/{method}_scores.pt").numpy()
+        except:
+            scores = torch.load(f"{args.output_dir}/{method}_scores.pt")
+
         assert scores.shape[0] < scores.shape[1]
 
         groups = list(test_df["group"].unique())
@@ -90,29 +93,29 @@ def main():
         scores_test = scores.mean(axis=1)
 
         # Plotting histograms
-        sns.set_style("whitegrid")
-        fig, ax = plt.subplots(figsize=(12, 6))
-        ax.hist(scores_train, bins=50, alpha=0.7, color='blue', label='Training Samples')
-        ax.hist(scores_test, bins=50, alpha=0.7, color='green', label='Test Samples')
-        ax.set_title(f'Distribution of {method} Scores')
-        ax.legend()
-        fig.savefig(f'{args.path_to_save}attr_scores/Distribution_of_{method}_scores.pdf')
+       # sns.set_style("whitegrid")
+       # fig, ax = plt.subplots(figsize=(12, 6))
+       # ax.hist(scores_train, bins=50, alpha=0.7, color='blue', label='Training Samples')
+       # ax.hist(scores_test, bins=50, alpha=0.7, color='green', label='Test Samples')
+       # ax.set_title(f'Distribution of {method} Scores')
+       # ax.legend()
+       # fig.savefig(f'{args.path_to_save}attr_scores/Distribution_of_{method}_scores.pdf')
 
         # Table of means and stds
-        df_tda_scores_stat.loc[method] = ["train", scores_train.min(), scores_train.mean(), scores_train.max(), scores_train.std()]
-        df_tda_scores_stat.loc[method] = ["test", scores_test.min(), scores_test.mean(), scores_test.max(), scores_test.std()]
+        df_tda_scores_stat.loc[(method,"train")] = [scores_train.min(), scores_train.mean(), scores_train.max(), scores_train.std()]
+        df_tda_scores_stat.loc[(method,"test")] = [scores_test.min(), scores_test.mean(), scores_test.max(), scores_test.std()]
 
         # 2. Distribution of TDA scores for training samples (averages) by group: histograms and a table of means and stds
         for group in groups:
             scores_group = scores[test_df["group"] == group].mean(axis=0)
-            sns.set_style("whitegrid")
-            fig, ax = plt.subplots(figsize=(12, 6))
-            ax.hist(scores_group, bins=50, alpha=0.7, color='blue', label='Training Samples')
-            ax.set_title(f'Distribution of {method} Scores for Group {group}')
-            ax.legend()
-            fig.savefig(f'{args.path_to_save}attr_scores/Distribution_of_{method}_scores_{group}.pdf')
+        #    sns.set_style("whitegrid")
+        #    fig, ax = plt.subplots(figsize=(12, 6))
+        #    ax.hist(scores_group, bins=50, alpha=0.7, color='blue', label='Training Samples')
+        #    ax.set_title(f'Distribution of {method} Scores for Group {group}')
+        #    ax.legend()
+        #    fig.savefig(f'{args.path_to_save}attr_scores/Distribution_of_{method}_scores_{group}.pdf')
 
-            df_tda_scores_group_stat.loc[method] = [group,scores_group.min(), scores_group.mean(), scores_group.max(), scores_group.std()]
+            df_tda_scores_group_stat.loc[(method,group)] = [scores_group.min(), scores_group.mean(), scores_group.max(), scores_group.std()]
 
 
         # 3. Distribution of group attribution scores for training samples: histograms and a table of means and stds 
@@ -136,12 +139,12 @@ def main():
 
         d3m_scores = d3m.compute_group_alignment_scores(d3m.scores, d3m.group_indices_val, group_losses)
 
-        sns.set_style("whitegrid")
-        fig, ax = plt.subplots(figsize=(12, 6))
-        ax.hist(d3m_scores, bins=50, alpha=0.7, color='blue', label='Training Samples')
-        ax.set_title(f'Distribution of Group Alignment Scores with {method}')
-        ax.legend()
-        fig.savefig(f'{args.path_to_save}attr_scores/Distribution_of_d3m_scores_{method}.pdf')
+        #sns.set_style("whitegrid")
+        #fig, ax = plt.subplots(figsize=(12, 6))
+        #ax.hist(d3m_scores, bins=50, alpha=0.7, color='blue', label='Training Samples')
+        #ax.set_title(f'Distribution of Group Alignment Scores with {method}')
+        #ax.legend()
+        #fig.savefig(f'{args.path_to_save}attr_scores/Distribution_of_d3m_scores_{method}.pdf')
 
         df_d3m_scores_stat.loc[method] = [d3m_scores.min(), d3m_scores.mean(), d3m_scores.max(), d3m_scores.std()]
 
