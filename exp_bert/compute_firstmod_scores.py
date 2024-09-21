@@ -4,12 +4,6 @@ import torch
 import pandas as pd
 import argparse
 
-import sys
-import os
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.abspath(os.path.join(current_dir, '..'))
-sys.path.append(parent_dir)
-
 from utils.modules import FirstModuleBaseline, FirstModuleTDA
 from utils.utils import get_dataset
 
@@ -21,19 +15,19 @@ def parse_args():
     parser.add_argument(
         "--checkpoint_dir",
         type=str,
-        default="../../output_bert/toxigen/base/best_checkpoint",
+        default="../output_bert/toxigen/base/best_checkpoint",
         help="A path to store the final checkpoint.",
     )
     parser.add_argument(
         "--data_dir",
         type=str,
-        default="../../data/toxigen/",
+        default="../data/toxigen/",
         help="A path to load training and validation data from.",
     )
     parser.add_argument(
         "--path_to_save",
         type=str,
-        default="../../output_bert/toxigen/",
+        default="../output_bert/toxigen/",
         help="The path to save scores.",
     )
     args = parser.parse_args()
@@ -55,9 +49,9 @@ def main():
     # Load the model fine-tuned on toxigen dataset
     model = AutoModelForSequenceClassification.from_pretrained(args.checkpoint_dir,num_labels = 2).to(DEVICE)
     
-    first_module_baseline = FirstModuleBaseline(train_text, test_text, model, tokenizer,args.path_to_save)
-    first_module_baseline.get_Bm25_scores()
-    first_module_baseline.get_FAISS_scores()
+    #first_module_baseline = FirstModuleBaseline(train_text, test_text, model, tokenizer,args.path_to_save)
+    #first_module_baseline.get_Bm25_scores()
+    #first_module_baseline.get_FAISS_scores()
 
     first_module_tda = FirstModuleTDA(train_dataset,test_dataset,model,args.path_to_save)
     first_module_tda.get_IF_scores()

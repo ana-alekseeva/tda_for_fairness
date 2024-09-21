@@ -7,12 +7,7 @@ import shutil
 import json
 import numpy as np
 import argparse
-
-import sys
 import os
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.abspath(os.path.join(current_dir, '..')) 
-sys.path.append(parent_dir)
 
 from exp_bert.train import finetune_model
 from utils.utils import get_dataloader, get_dataset, compute_metrics
@@ -27,19 +22,19 @@ def parse_args():
     parser.add_argument(
         "--checkpoint_dir",
         type=str,
-        default="../../output_bert/toxigen/base/best_checkpoint",
+        default="../output_bert/toxigen/base/best_checkpoint",
         help="A path to store the final checkpoint.",
     )
     parser.add_argument(
         "--data_dir",
         type=str,
-        default="../../data/toxigen/",
+        default="../data/toxigen/",
         help="A path to load training and validation data from.",
     )
     parser.add_argument(
         "--output_dir",
         type=str,
-        default="../../output_bert/toxigen/",
+        default="../output_bert/toxigen/",
         help="The path to save scores.",
     )
     parser.add_argument(
@@ -51,7 +46,7 @@ def parse_args():
     parser.add_argument(
         "--num_runs",
         type=int,
-        default=5,
+        default=3,
         help="The number of independent runs.",
     )
     args = parser.parse_args()
@@ -64,6 +59,7 @@ def main():
     """
     args = parse_args()
     
+    seeds = [i for i in range(args.num_runs)]
     ks = [50,100,200,300,400,500, 1000, 3000, 5000, 7000]
     finetuned_model = AutoModelForSequenceClassification.from_pretrained(args.checkpoint_dir,num_labels = 2).to(DEVICE)
     tokenizer = AutoTokenizer.from_pretrained(config.TOKENIZER_NAME, use_fast=True, trust_remote_code=True)
@@ -142,7 +138,7 @@ def main():
             new_folder = f"{args.output_dir}{args.method}_finetuning/{k}/{i}/"
             os.makedirs(new_folder, exist_ok=True)
     
-            seed = random.randint(0,1000)
+            seed = seeds[i]
             finetune_model(train_dataset.select(debiased_train_idx),val_dataset, new_folder, random_seed=seed)
         
             model_path = f"{new_folder}/best_checkpoint"

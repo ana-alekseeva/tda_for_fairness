@@ -2,11 +2,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-import sys
-import os
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.abspath(os.path.join(current_dir, '..')) 
-sys.path.append(parent_dir)
+#import sys
+#import os
+#current_dir = os.path.dirname(os.path.abspath(__file__))
+#parent_dir = os.path.abspath(os.path.join(current_dir, '..')) 
+#sys.path.append(parent_dir)
+
 from utils.utils import get_dataset, get_dataloader, compute_metrics
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 import torch
@@ -99,7 +100,6 @@ def main():
 
 
 
-
     for group in test_df["group"].unique():
         
         g_indices = test_df.index[test_df["group"] == group].tolist()
@@ -133,6 +133,35 @@ def main():
             plt.tight_layout()
             plt.savefig(f'{args.path_to_save}{metric}/{group}_{metric}.pdf')
 
+
+    for i,metric in enumerate(["accuracy","loss","fpr","fnr","auc"]):
+        os.makedirs(args.path_to_save + metric, exist_ok=True)
+
+        plt.figure(figsize=(8, 6))
+        sns.set_style("whitegrid")
+        for method,color in zip(methods, colors):
+
+            with open(f'{args.results_dir}{method}_finetuning/metrics_total_7000.json') as f:
+                data = json.load(f)
+            
+            means_by_k = []
+            ks = sorted([int(i) for i in data.keys()])
+            ks = [str(i) for i in ks]
+
+            for k in ks:
+                m = np.mean(data[k][metric])
+                means_by_k.append(m)
+            
+            plt.plot(['0']+ks, np.hstack([base_model_metrics[i],means_by_k]), color = color, label = method)
+
+        plt.xlabel('K Removed Training Samples')
+        plt.ylabel(metric)
+        plt.title(metric)
+        plt.xticks(['0']+ks)
+        plt.legend()
+
+        plt.tight_layout()
+        plt.savefig(f'{args.path_to_save}{metric}/{group}_{metric}_both.pdf')
 
 
 if __name__ == "__main__":

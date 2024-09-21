@@ -5,14 +5,8 @@ import config
 import evaluate as ev
 import argparse
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
-
-import shutil
-import sys
 import os
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.abspath(os.path.join(current_dir, '..')) 
-sys.path.append(parent_dir)
-
+import shutil
 from utils.utils import get_dataloader, get_dataset,compute_accuracy
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -30,13 +24,13 @@ def parse_args():
     parser.add_argument(
         "--checkpoint_dir",
         type=str,
-        default="../../output_bert/toxigen/base/",
+        default="../output_bert/toxigen/base/",
         help="A path to store the final checkpoint.",
     )
     parser.add_argument(
         "--data_dir",
         type=str,
-        default="../../data/toxigen/",
+        default="../data/toxigen/",
         help="A path to load training and validation data from.",
     )
     args = parser.parse_args()
