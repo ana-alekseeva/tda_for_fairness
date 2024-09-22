@@ -1,7 +1,7 @@
 import torch
 import transformers as tf
 import numpy as np
-import config
+from exp_bert import config
 import evaluate as ev
 import argparse
 from transformers import AutoTokenizer, AutoModelForSequenceClassification

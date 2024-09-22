@@ -2,16 +2,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-#import sys
-#import os
-#current_dir = os.path.dirname(os.path.abspath(__file__))
-#parent_dir = os.path.abspath(os.path.join(current_dir, '..')) 
-#sys.path.append(parent_dir)
-
+import os
 from utils.utils import get_dataset, get_dataloader, compute_metrics
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 import torch
-import config
+from exp_bert import config
 import numpy as np
 import argparse
 import json
