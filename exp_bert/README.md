@@ -40,6 +40,12 @@ python -m exp_bert.train --checkpoint_dir ../output_bert/toxigen/base/ \
 python -m exp_bert.compute_firstmod_scores --checkpoint_dir ../output_bert/toxigen/base/best_checkpoint \
     --data_dir ../data/toxigen/ \
     --path_to_save ../output_bert/toxigen/
+
+
+srun --gpus=1 --partition=a100-galvani --time=2:00:00 --output=firstmod_job_output --error=firstmod_job_errors sh -c "source ~/.bashrc && conda activate ../env && python -m exp_bert.compute_firstmod_scores --checkpoint_dir ../output_bert/toxigen/base/best_checkpoint \
+    --data_dir ../data/toxigen/ \
+    --path_to_save ../output_bert/toxigen/
+    "&    
 ```
 
 2) Run counterfactual
@@ -52,21 +58,21 @@ python -m exp_bert.run_counterfactual --checkpoint_dir ../output_bert/toxigen/ba
 ```
 
 ```bash
-srun --gpus=1 --partition=a100-galvani --time=14:00:00 --output=if_job_output --error=if_job_errors sh -c "source ~/.bashrc && conda activate ../env && python -m exp_bert.run_counterfactual --checkpoint_dir ../output_bert/toxigen/base/best_checkpoint \
+srun --gpus=1 --partition=2080-galvani --time=14:00:00 --output=if_job_output --error=if_job_errors sh -c "source ~/.bashrc && conda activate ../env && python -m exp_bert.run_counterfactual --checkpoint_dir ../output_bert/toxigen/base/best_checkpoint \
     --data_dir ../data/toxigen/ \
     --output_dir ../output_bert/toxigen/\
     --method IF \
     --num_runs 3
     "&
 
-srun --gpus=1 --partition=a100-galvani --time=14:00:00 --output=trak_job_output --error=trak_job_errors sh -c "source ~/.bashrc && conda activate ../env && python -m exp_bert.run_counterfactual --checkpoint_dir ../output_bert/toxigen/base/best_checkpoint \
+srun --gpus=1 --partition=2080-galvani --time=14:00:00 --output=trak_job_output --error=trak_job_errors sh -c "source ~/.bashrc && conda activate ../env && python -m exp_bert.run_counterfactual --checkpoint_dir ../output_bert/toxigen/base/best_checkpoint \
     --data_dir ../data/toxigen/ \
     --output_dir ../output_bert/toxigen/\
     --method TRAK \
     --num_runs 3
     "&
 
-srun --gpus=1 --partition=a100-galvani --time=14:00:00 --output=random_job_output --error=random_job_errors sh -c "source ~/.bashrc && conda activate ../env && python -m exp_bert.run_counterfactual --checkpoint_dir ../output_bert/toxigen/base/best_checkpoint \
+srun --gpus=1 --partition=2080-galvani --time=14:00:00 --output=random_job_output --error=random_job_errors sh -c "source ~/.bashrc && conda activate ../env && python -m exp_bert.run_counterfactual --checkpoint_dir ../output_bert/toxigen/base/best_checkpoint \
     --data_dir ../data/toxigen/ \
     --output_dir ../output_bert/toxigen/\
     --method random \
@@ -77,7 +83,14 @@ srun --gpus=1 --partition=a100-galvani --time=14:00:00 --output=random_job_outpu
 and plot the results
 
 ```bash
-python -m exp_bert.vis_k_removed_json --checkpoint_dir ../output_bert/toxigen/base/best_checkpoint \
+python -m exp_bert.vis_counterfactual --checkpoint_dir ../output_bert/toxigen/base/best_checkpoint \
+        --data_dir ../data/toxigen/ \
+        --results_dir ../output_bert/toxigen/ \
+        --path_to_save vis/vis_bert_toxigen/
+```
+
+```bash
+python -m exp_bert.vis_scores --checkpoint_dir ../output_bert/toxigen/base/best_checkpoint \
         --data_dir ../data/toxigen/ \
         --results_dir ../output_bert/toxigen/ \
         --path_to_save vis/vis_bert_toxigen/
