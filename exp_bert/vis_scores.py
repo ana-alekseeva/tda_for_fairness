@@ -1,4 +1,4 @@
-import config
+from exp_bert import config
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
 import pandas as pd
@@ -9,11 +9,7 @@ import argparse
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-import sys
 import os
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.abspath(os.path.join(current_dir, '..')) 
-sys.path.append(parent_dir)
 
 from utils.utils import get_dataloader, get_dataset, compute_metrics
 from utils.modules import D3M
@@ -26,25 +22,25 @@ def parse_args():
     parser.add_argument(
         "--checkpoint_dir",
         type=str,
-        default="../../output_bert/toxigen/base/best_checkpoint",
+        default="../output_bert/toxigen/base/best_checkpoint",
         help="A path to store the final checkpoint.",
     )
     parser.add_argument(
         "--data_dir",
         type=str,
-        default="../../data/toxigen/",
+        default="../data/toxigen/",
         help="A path to load training and validation data from.",
     )
     parser.add_argument(
         "--output_dir",
         type=str,
-        default="../../output_bert/toxigen/",
+        default="../output_bert/toxigen/",
         help="The path to save scores.",
     )
     parser.add_argument(
         "--path_to_save",
         type=str,
-        default="../vis/vis_bert_toxigen/",
+        default="vis/vis_bert_toxigen/",
         help="The path to save plots.",
     )
     args = parser.parse_args()

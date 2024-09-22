@@ -1,4 +1,4 @@
-import config
+from exp_bert import config
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
 import pandas as pd
