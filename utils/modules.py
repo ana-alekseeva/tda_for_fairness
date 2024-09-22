@@ -407,7 +407,7 @@ class D3M:
         return group_alignment_scores
 
     def get_debiased_train_indices(
-        self, group_alignment_scores, use_heuristic=True, num_to_discard=None
+        self, group_alignment_scores, use_heuristic=False, num_to_discard=None
     ):
         """
         If use_heuristic is True, training examples with negative score will be discarded,
@@ -426,7 +426,7 @@ class D3M:
         )
         return sorted_indices[num_to_discard:]
 
-    def debias(self, use_heuristic=True, num_to_discard=None):
+    def debias(self, use_heuristic=False, num_to_discard=None):
         """
         Debiases the training process by constructing a new training set that
         excludes examples which harm worst-group accuracy.

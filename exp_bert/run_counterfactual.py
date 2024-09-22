@@ -59,7 +59,6 @@ def main():
     """
     args = parse_args()
     
-    seeds = [i for i in range(args.num_runs)]
     ks = [50,100,200,300,400,500, 1000, 3000, 5000, 7000]
     finetuned_model = AutoModelForSequenceClassification.from_pretrained(args.checkpoint_dir,num_labels = 2).to(DEVICE)
     tokenizer = AutoTokenizer.from_pretrained(config.TOKENIZER_NAME, use_fast=True, trust_remote_code=True)
@@ -138,8 +137,7 @@ def main():
             new_folder = f"{args.output_dir}{args.method}_finetuning/{k}/{i}/"
             os.makedirs(new_folder, exist_ok=True)
     
-            seed = seeds[i]
-            finetune_model(train_dataset.select(debiased_train_idx),val_dataset, new_folder, random_seed=seed)
+            finetune_model(train_dataset.select(debiased_train_idx),val_dataset, new_folder, random_seed=i)
         
             model_path = f"{new_folder}/best_checkpoint"
             model = AutoModelForSequenceClassification.from_pretrained(model_path,num_labels = 2).to(DEVICE)
