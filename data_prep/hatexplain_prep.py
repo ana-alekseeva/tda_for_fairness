@@ -6,7 +6,7 @@ import os
 from utils.utils import plot_distr_by_group
 import numpy as np
 import random
-random.seed(config.SEED)
+random.seed(config.RANDOM_STATE)
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Create train, validation and test datasets of ToxiGen.")
@@ -120,7 +120,7 @@ def main():
                         lambda x: x.sample(n_disparity
                                     if (x.name[0] == 'African' and x.name[1] == 0) 
                                     else min_samples, 
-                                    random_state=config.SEED)
+                                    random_state=config.RANDOM_STATE)
                                     )
                             .reset_index(drop=True)
                         )       
@@ -131,7 +131,7 @@ def main():
                     ['group','label'], group_keys=False)
                     .apply(
                         lambda x: x.sample(min_samples, 
-                                    random_state=config.SEED)
+                                    random_state=config.RANDOM_STATE)
                                     )
                             .reset_index(drop=True)
                         )  
