@@ -54,7 +54,7 @@ def main():
     base_model.eval()
     tokenizer = AutoTokenizer.from_pretrained(config.TOKENIZER_NAME, use_fast=True, trust_remote_code=True)
 
-    test_df = pd.read_csv(args.data_dir + "test.csv")
+    test_df = pd.read_csv(args.data_dir + "test.csv").reset_index(drop=True)
     test_dataset = get_dataset(tokenizer,config.MAX_LENGTH,args.data_dir,"test")
     test_dl = get_dataloader(test_dataset, 32, shuffle=False)
     base_model_metrics = compute_metrics(base_model,test_dl,DEVICE)

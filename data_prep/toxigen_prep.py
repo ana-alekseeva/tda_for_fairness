@@ -1,14 +1,7 @@
 import pandas as pd
 from datasets import load_dataset
 import argparse
-
-
-import sys
 import os
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.abspath(os.path.join(current_dir, '..')) 
-sys.path.append(parent_dir)
-
 from utils.utils import plot_distr_by_group
 
 def parse_args():
@@ -88,6 +81,7 @@ def main():
                                 else min_samples, 
                                 random_state=args.seed)
                        )
+                       .reset_index(drop=True)
         )    
        
     df.rename(columns={"generation": "text", "prompt_label": "label"}, inplace=True)
@@ -100,6 +94,7 @@ def main():
                     ['group','label'],group_keys=False)
                     .apply(
                            lambda x: x.sample(frac=0.8,random_state=args.seed))
+                    .reset_index(drop=True)
                 )
     val_df = df.drop(train_df.index)
 
@@ -128,6 +123,7 @@ def main():
                          test_samples_per_group_and_label, 
                          random_state=args.seed
                      ))
+                .reset_index(drop=True)
                 )
     plot_distr_by_group(test_df,var = "label", title = "test",path_to_save=args.path_to_save)
 

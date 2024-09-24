@@ -62,7 +62,7 @@ def main():
     test_dl = get_dataloader(test_dataset, config.TEST_BATCH_SIZE,shuffle=False)
 
     train_group_indices = pd.read_csv(args.data_dir + "train.csv")['group'].astype('category').cat.codes.tolist()
-    test_df = pd.read_csv(args.data_dir + "test.csv")
+    test_df = pd.read_csv(args.data_dir + "test.csv").reset_index(drop=True)
     test_group_indices = test_df['group'].astype('category').cat.codes.tolist()
 
     os.makedirs(f"{args.path_to_save}attr_scores", exist_ok=True)
