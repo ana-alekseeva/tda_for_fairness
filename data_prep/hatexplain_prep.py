@@ -137,7 +137,10 @@ def main():
                         )  
         plot_distr_by_group(df_split,var = "label", title = split,path_to_save=args.path_to_save_vis)
 
-        df_split.to_csv(args.path_to_save+f"{split}.csv", index=False)
+        if split == "validation":
+            df_split.to_csv(args.path_to_save+"val.csv", index=False)
+        else:
+            df_split.to_csv(args.path_to_save+f"{split}.csv", index=False)
 
 
 
