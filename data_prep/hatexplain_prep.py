@@ -109,7 +109,7 @@ def main():
             df_split = df_split.drop_duplicates(subset=["text","label"]).reset_index(drop=True)
 
 
-        if split == "train" or split == "val":
+        if split == "train" or split == "validation":
             min_samples = df_split.loc[df_split["group"]!="African"].groupby(['group','label']).size().min()
 
             n_disparity = int(min_samples * 0.25)
