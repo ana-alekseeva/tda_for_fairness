@@ -135,7 +135,7 @@ def main():
                                     )
                             .reset_index(drop=True)
                         )  
-        plot_distr_by_group(df_split,var = "label", title = "split",path_to_save=args.path_to_save_vis)
+        plot_distr_by_group(df_split,var = "label", title = split,path_to_save=args.path_to_save_vis)
 
         df_split.to_csv(args.path_to_save+f"{split}.csv", index=False)
 

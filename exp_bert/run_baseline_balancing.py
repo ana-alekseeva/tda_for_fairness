@@ -180,7 +180,7 @@ def main():
             samples_removed = train_df[train_df["group"] == group].shape[0] - train_df.loc[debiased_train_idx][train_df["group"] == group].shape[0]
             comparison_table.loc[method + "_" + group] = [accuracy, loss, fpr, fnr, auc, samples_removed]
 
-    comparison_table.to_csv(args.path_to_save + "comparison_table.csv", index=False)
+    comparison_table.to_csv(args.path_to_save + "comparison_table.csv")
 
 if __name__ == "__main__":
     main()
