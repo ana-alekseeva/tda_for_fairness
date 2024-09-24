@@ -57,18 +57,19 @@ def main():
     val_df = pd.read_csv(args.data_dir+"val.csv")
 
     # Create a balanced dataset
-
+    min_size = train_df.groupby(['group','label']).group.value_counts().min()
     df_train_balanced = (train_df.groupby(['group','label'],group_keys=False)
                                  .apply(lambda x: 
-                                        x.sample(train_df.group.value_counts().min()),
-                                        random_state=args.seed)
+                                        x.sample(min_size,
+                                        random_state=config.RANDOM_STATE))
                                     .reset_index(drop=True)
                 )
 
+    min_size = val_df.groupby(['group','label']).group.value_counts().min()
     df_val_balanced = (val_df.groupby(['group','label'],group_keys=False)
                              .apply(lambda x: 
-                                    x.sample(val_df.group.value_counts().min()),
-                                    random_state=args.seed)
+                                    x.sample(min_size,
+                                    random_state=config.RANDOM_STATE))
                             .reset_index(drop=True)
                 )   
     
@@ -145,7 +146,7 @@ def main():
 
 
     for method in ["IF", "TRAK"]:
-        scores = torch.load(f"{args.output_dir}/{args.method}_scores.pt")
+        scores = torch.load(f"{args.output_dir}/{method}_scores.pt")
         scores = scores.T
 
         d3m = D3M(
@@ -162,7 +163,7 @@ def main():
         debiased_train_idx = d3m.debias(use_heuristic = True)
         samples_removed = train_df.shape[0] - len(debiased_train_idx)
 
-        new_folder = f"{args.output_dir}{args.method}_finetuning/heuristic/"
+        new_folder = f"{args.output_dir}{method}_finetuning/heuristic/"
         os.makedirs(new_folder, exist_ok=True)
     
         finetune_model(train_dataset.select(debiased_train_idx),val_dataset, new_folder, random_seed=config.RANDOM_STATE)
@@ -179,7 +180,7 @@ def main():
             samples_removed = train_df[train_df["group"] == group].shape[0] - train_df.loc[debiased_train_idx][train_df["group"] == group].shape[0]
             comparison_table.loc[method + "_" + group] = [accuracy, loss, fpr, fnr, auc, samples_removed]
 
-    comparison_table.to_csv(args.path_to_save + "comparison_table.csv", index=False)
+    comparison_table.to_csv(args.path_to_save + "comparison_table.csv")
 
 if __name__ == "__main__":
     main()

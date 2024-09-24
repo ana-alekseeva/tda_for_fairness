@@ -71,7 +71,7 @@ def main():
         sns.set_style("whitegrid")
         for method,color in zip(methods, colors):
 
-            with open(f'{args.results_dir}{method}_finetuning/metrics_total_7000.json') as f:
+            with open(f'{args.results_dir}{method}_finetuning/metrics_total_600.json') as f:
                 data = json.load(f)
             
             means_by_k = []
@@ -106,7 +106,7 @@ def main():
             plt.figure(figsize=(8, 6))
             sns.set_style("whitegrid")
             for method,color in zip(methods, colors):
-                with open(f'{args.results_dir}{method}_finetuning/metrics_groups_7000.json') as f:
+                with open(f'{args.results_dir}{method}_finetuning/metrics_groups_600.json') as f:
                     data = json.load(f)
                 
                 means_by_k = []
@@ -136,7 +136,7 @@ def main():
         sns.set_style("whitegrid")
         for method,color in zip(methods, colors):
 
-            with open(f'{args.results_dir}{method}_finetuning/metrics_total_7000.json') as f:
+            with open(f'{args.results_dir}{method}_finetuning/metrics_total_600.json') as f:
                 data = json.load(f)
             
             means_by_k = []

@@ -6,7 +6,7 @@ import os
 from utils.utils import plot_distr_by_group
 import numpy as np
 import random
-random.seed(config.SEED)
+random.seed(config.RANDOM_STATE)
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Create train, validation and test datasets of ToxiGen.")
@@ -109,7 +109,7 @@ def main():
             df_split = df_split.drop_duplicates(subset=["text","label"]).reset_index(drop=True)
 
 
-        if split == "train" or split == "val":
+        if split == "train" or split == "validation":
             min_samples = df_split.loc[df_split["group"]!="African"].groupby(['group','label']).size().min()
 
             n_disparity = int(min_samples * 0.25)
@@ -120,7 +120,7 @@ def main():
                         lambda x: x.sample(n_disparity
                                     if (x.name[0] == 'African' and x.name[1] == 0) 
                                     else min_samples, 
-                                    random_state=config.SEED)
+                                    random_state=config.RANDOM_STATE)
                                     )
                             .reset_index(drop=True)
                         )       
@@ -131,13 +131,16 @@ def main():
                     ['group','label'], group_keys=False)
                     .apply(
                         lambda x: x.sample(min_samples, 
-                                    random_state=config.SEED)
+                                    random_state=config.RANDOM_STATE)
                                     )
                             .reset_index(drop=True)
                         )  
-        plot_distr_by_group(df_split,var = "label", title = "split",path_to_save=args.path_to_save_vis)
+        plot_distr_by_group(df_split,var = "label", title = split,path_to_save=args.path_to_save_vis)
 
-        df_split.to_csv(args.path_to_save+f"{split}.csv", index=False)
+        if split == "validation":
+            df_split.to_csv(args.path_to_save+"val.csv", index=False)
+        else:
+            df_split.to_csv(args.path_to_save+f"{split}.csv", index=False)
 
 
 

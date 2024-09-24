@@ -59,7 +59,8 @@ def main():
     """
     args = parse_args()
     
-    ks = [50,100,200,300,400,500, 1000, 3000, 5000, 7000]
+    #ks = [50,100,200,300,400,500, 1000, 3000, 5000, 7000]
+    ks = [50,100,150,200,250,300,350,400,450,500,600,700]
     finetuned_model = AutoModelForSequenceClassification.from_pretrained(args.checkpoint_dir,num_labels = 2).to(DEVICE)
     tokenizer = AutoTokenizer.from_pretrained(config.TOKENIZER_NAME, use_fast=True, trust_remote_code=True)
 
