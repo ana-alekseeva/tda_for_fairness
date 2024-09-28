@@ -41,6 +41,7 @@ def parse_args():
         default="../vis/vis_bert_toxigen/",
         help="The path to save plots.",
     )
+    
     args = parser.parse_args()
 
     return args
@@ -62,8 +63,6 @@ def main():
     methods = ["IF","TRAK","random"]
     colors = sns.color_palette("Set1", n_colors=len(methods))
 
-    #ks = [0,50, 100, 200, 300, 400, 500, 1000, 3000, 5000, 7000]
-
     for i,metric in enumerate(["accuracy","loss","fpr","fnr","auc"]):
         os.makedirs(args.path_to_save + metric, exist_ok=True)
 
@@ -71,7 +70,7 @@ def main():
         sns.set_style("whitegrid")
         for method,color in zip(methods, colors):
 
-            with open(f'{args.results_dir}{method}_finetuning/metrics_total_600.json') as f:
+            with open(f'{args.results_dir}{method}_finetuning/metrics_total.json') as f:
                 data = json.load(f)
             
             means_by_k = []
@@ -83,6 +82,7 @@ def main():
                 means_by_k.append(m)
             
             plt.plot(['0']+ks, np.hstack([base_model_metrics[i],means_by_k]), color = color, label = method)
+            plt.plot()
 
         plt.xlabel('K Removed Training Samples')
         plt.ylabel(metric)
@@ -106,7 +106,7 @@ def main():
             plt.figure(figsize=(8, 6))
             sns.set_style("whitegrid")
             for method,color in zip(methods, colors):
-                with open(f'{args.results_dir}{method}_finetuning/metrics_groups_600.json') as f:
+                with open(f'{args.results_dir}{method}_finetuning/metrics_groups.json') as f:
                     data = json.load(f)
                 
                 means_by_k = []
@@ -128,35 +128,6 @@ def main():
             plt.tight_layout()
             plt.savefig(f'{args.path_to_save}{metric}/{group}_{metric}.pdf')
 
-
-    for i,metric in enumerate(["accuracy","loss","fpr","fnr","auc"]):
-        os.makedirs(args.path_to_save + metric, exist_ok=True)
-
-        plt.figure(figsize=(8, 6))
-        sns.set_style("whitegrid")
-        for method,color in zip(methods, colors):
-
-            with open(f'{args.results_dir}{method}_finetuning/metrics_total_600.json') as f:
-                data = json.load(f)
-            
-            means_by_k = []
-            ks = sorted([int(i) for i in data.keys()])
-            ks = [str(i) for i in ks]
-
-            for k in ks:
-                m = np.mean(data[k][metric])
-                means_by_k.append(m)
-            
-            plt.plot(['0']+ks, np.hstack([base_model_metrics[i],means_by_k]), color = color, label = method)
-
-        plt.xlabel('K Removed Training Samples')
-        plt.ylabel(metric)
-        plt.title(metric)
-        plt.xticks(['0']+ks)
-        plt.legend()
-
-        plt.tight_layout()
-        plt.savefig(f'{args.path_to_save}{metric}/{group}_{metric}_both.pdf')
 
 
 if __name__ == "__main__":
