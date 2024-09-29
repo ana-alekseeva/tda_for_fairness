@@ -1,11 +1,6 @@
 import pandas as pd
 from transformers import AutoTokenizer,AutoModelForSequenceClassification
 import torch
-import sys
-import os
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.abspath(os.path.join(current_dir, '..')) 
-sys.path.append(parent_dir)
 from utils.utils import get_dataset, get_dataloader, compute_accuracy
 from utils.modules import D3M
 import config

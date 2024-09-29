@@ -146,20 +146,15 @@ python -m exp_bert.vis_counterfactual --checkpoint_dir ../output_bert/hatexplain
 ```
 
 ```bash
-python -m exp_bert.vis_scores --checkpoint_dir ../output_bert/hatexplain/base/best_checkpoint \
+python -m exp_bert.compute_metrics --checkpoint_dir ../output_bert/hatexplain/base/best_checkpoint \
         --data_dir ../data/hatexplain/ \
         --output_dir ../output_bert/hatexplain/ \
         --path_to_save vis/vis_bert_hatexplain/
 ```
 
-3) Compare the results to baseline balansing
+3) Compare the results to baseline balancing
 
 ```bash
-python -m exp_bert.run_baseline_balancing --checkpoint_dir ../output_bert/toxigen/base/best_checkpoint \
-        --data_dir ../data/toxigen/ \
-        --path_to_save res/toxigen/ \
-        --path_to_save_model ../output_bert/toxigen/ \
-        --output_dir ../output_bert/toxigen/
 
 srun --gpus=1 --partition=2080-galvani --time=2:00:00 --output=balance_job_output --error=balance_job_errors sh -c "source ~/.bashrc && conda activate ../env && python -m exp_bert.run_baseline_balancing --checkpoint_dir ../output_bert/toxigen/base/best_checkpoint \
         --data_dir ../data/toxigen/ \
@@ -174,4 +169,27 @@ srun --gpus=1 --partition=2080-galvani --time=2:00:00 --output=balance_job_outpu
         --path_to_save_model ../output_bert/hatexplain/ \
         --output_dir ../output_bert/hatexplain/
     "&    
+```
+
+```bash
+python -m exp_bert.vis_scores_matrix --data_dir ../data/toxigen/ \
+        --output_dir ../output_bert/toxigen \
+        --path_to_save vis/vis_bert_toxigen/
+
+python -m exp_bert.vis_scores_matrix --data_dir ../data/hatexplain/ \
+        --output_dir ../output_bert/hatexplain \
+        --path_to_save vis/vis_bert_hatexplain/
+```
+
+```bash
+python -m exp_bert.get_examples --checkpoint_dir ../output_bert/toxigen/base/best_checkpoint \
+        --data_dir ../data/toxigen/ \
+        --output_dir ../output_bert/toxigen/ \
+        --path_to_save res/toxigen/
+
+
+python -m exp_bert.get_examples --checkpoint_dir ../output_bert/hatexplain/base/best_checkpoint \
+        --data_dir ../data/hatexplain/ \
+        --output_dir ../output_bert/hatexplain/ \
+        --path_to_save res/hatexplain/
 ```
