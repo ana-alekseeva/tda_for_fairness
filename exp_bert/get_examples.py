@@ -3,14 +3,14 @@ from transformers import AutoTokenizer,AutoModelForSequenceClassification
 import torch
 from utils.utils import get_dataset, get_dataloader, compute_accuracy
 from utils.modules import D3M
-import config
+from exp_bert import config
 import argparse
 
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Plot the results of counterfactual analysis.")
+    parser = argparse.ArgumentParser(description="Get examples with group attribution scores.")
 
     parser.add_argument(
         "--checkpoint_dir",
@@ -28,6 +28,12 @@ def parse_args():
         "--path_to_save",
         type=str,
         default="../../output_bert/toxigen/",
+        help="The path to save scores.",
+    )
+    parser.add_argument(
+        "--output_dir",
+        type=str,
+        default="../output_bert/toxigen/",
         help="The path to save scores.",
     )
     args = parser.parse_args()
@@ -55,7 +61,7 @@ def main():
     model.eval()
 
     for method in ["IF","TRAK"]:
-        scores = torch.load(f"{args.path_to_save}{method}_scores.pt")
+        scores = torch.load(f"{args.output_dir}{method}_scores.pt")
         scores = scores.T
 
         d3m = D3M(

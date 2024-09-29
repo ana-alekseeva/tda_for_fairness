@@ -58,17 +58,21 @@ def main():
         plt.savefig(f"{args.path_to_save}/heatmap_{method}.pdf")
     
     scores_IF = torch.load(f"{args.output_dir}/IF_scores.pt").numpy().T
-    scores_TRAK = torch.load(f"{args.output_dir}/TRAK_scores.pt").numpy().T
+    scores_TRAK = torch.load(f"{args.output_dir}/TRAK_scores.pt").T
 
     test_df = pd.read_csv(args.data_dir + "test.csv")
     train_df = pd.read_csv(args.data_dir + "train.csv")
 
-    train_sorted_idx = train_df.sort_values(by='group').index
-    test_sorted_idx = test_df.sort_values(by='group').index
+    train_sorted_idx = train_df.sort_values(by='group').index.to_list()
+    test_sorted_idx = test_df.sort_values(by='group').index.to_list()
+    
+    scores_IF = scores_IF[train_sorted_idx,:]
+    scores_IF = scores_IF[:,test_sorted_idx]
+    scores_TRAK = scores_TRAK[train_sorted_idx,:]
+    scores_TRAK = scores_TRAK[:,test_sorted_idx]
 
-
-    plot_and_save_heatmap(scores_IF[train_sorted_idx,test_sorted_idx])
-    plot_and_save_heatmap(scores_TRAK[train_sorted_idx,test_sorted_idx])
+    plot_and_save_heatmap(scores_IF,"IF")
+    plot_and_save_heatmap(scores_TRAK,"TRAK")
 
 
 
