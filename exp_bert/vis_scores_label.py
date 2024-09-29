@@ -59,7 +59,7 @@ def main():
                 matrix_avg[i,j] = np.mean(m)
 
 
-        plt.figure(figsize=(10,10))
+        plt.figure(figsize=(6,2))
         
         # Create heatmap
         heatmap = plt.imshow(matrix_avg, cmap='viridis', aspect='auto')
@@ -67,7 +67,7 @@ def main():
         plt.xticks(ticks=[0,1], labels=["neutral","hate"])
         
         # Add labels to the axes
-        plt.xlabel('Test samples')
+        plt.xlabel('Label')
         plt.ylabel('Training samples')
         plt.title(f"{method} scores")
         

@@ -193,3 +193,29 @@ python -m exp_bert.get_examples --checkpoint_dir ../output_bert/hatexplain/base/
         --output_dir ../output_bert/hatexplain/ \
         --path_to_save res/hatexplain/
 ```
+
+
+```bash
+python -m exp_bert.vis_scores_matrix --data_dir ../data/toxigen/ \
+        --output_dir ../output_bert/toxigen/ \
+        --path_to_save res/toxigen/
+
+
+python -m exp_bert.vis_scores_matrix --data_dir ../data/hatexplain/ \
+        --output_dir ../output_bert/hatexplain/ \
+        --path_to_save res/hatexplain/
+```
+
+
+```bash
+python -m exp_bert.vis_scores_label --checkpoint_dir ../output_bert/toxigen/base/best_checkpoint \
+        --data_dir ../data/toxigen/ \
+        --output_dir ../output_bert/toxigen/ \
+        --path_to_save res/toxigen/
+
+
+python -m exp_bert.vis_scores_label --checkpoint_dir ../output_bert/hatexplain/base/best_checkpoint \
+        --data_dir ../data/hatexplain/ \
+        --output_dir ../output_bert/hatexplain/ \
+        --path_to_save res/hatexplain/
+```

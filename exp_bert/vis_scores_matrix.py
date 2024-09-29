@@ -55,7 +55,7 @@ def main():
         
         # Create heatmap
         heatmap = plt.imshow(matrix_avg, cmap='viridis', aspect='auto')
-        plt.xticks(ticks=np.arange(n), labels=groups)
+        plt.xticks(ticks=np.arange(n), labels=groups, rotation=45)
         plt.yticks(ticks=np.arange(n), labels=groups)
         
         # Add labels to the axes
