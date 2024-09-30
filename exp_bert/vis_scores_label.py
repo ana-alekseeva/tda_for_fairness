@@ -59,7 +59,7 @@ def main():
                 matrix_avg[i,j] = np.mean(m)
 
 
-        plt.figure(figsize=(6,8))
+        plt.figure(figsize=(10,10))
         
         # Create heatmap
         heatmap = plt.imshow(matrix_avg, cmap='viridis', aspect='auto')
