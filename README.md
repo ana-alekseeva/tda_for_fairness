@@ -1,4 +1,4 @@
-# Data Debiasing for Language Models via Training Data Attribution: Improving Worst-Group Accuracy
+# Improving Group Fairness in Language Models via Training Data Attribution
 
 This is my master's thesis project. We aim to determine whether selected training data attribution explainability methods (TRAK and influence functions) can debias training datasets, and therefore improve the fairness of models trained on datasets debiased in this way.
 
@@ -54,20 +54,14 @@ python -m data_prep.hatexplain_prep
 
 ## 2. Fine-tune pre-trained BERT model
 
+The CLI commands provided below are designed for the ToxiGen dataset. To apply them to the HateXplain dataset, simply replace instances of 'toxigen' with 'hatexplain'.
+
 Fine-tune pre-trained BERT model on the training subset of the ToxiGen dataset by running: 
 
 ```bash
 python -m exp_bert.train --checkpoint_dir ../output_bert/toxigen/base/ \
     --seed 42 \
     --data_dir ../data/toxigen/
-```
-
-
-```bash
-srun --gpus=1 --partition=a100-galvani --time=2:00:00 --output=if_job_output --error=if_job_errors sh -c "source ~/.bashrc && conda activate ../env && python -m exp_bert.train --checkpoint_dir ../output_bert/hatexplain/base/ \
-    --seed 42 \
-    --data_dir ../data/hatexplain/
-    "&
 ```
 
 ## 3. Run 2 modules of D3M
@@ -79,72 +73,15 @@ python -m exp_bert.compute_firstmod_scores --checkpoint_dir ../output_bert/toxig
     --data_dir ../data/toxigen/ \
     --path_to_save ../output_bert/toxigen/
 
-
-srun --gpus=1 --partition=a100-galvani --time=2:00:00 --output=firstmod_job_output --error=firstmod_job_errors sh -c "source ~/.bashrc && conda activate ../env && python -m exp_bert.compute_firstmod_scores --checkpoint_dir ../output_bert/toxigen/base/best_checkpoint \
-    --data_dir ../data/toxigen/ \
-    --path_to_save ../output_bert/toxigen/
-    "&    
-
-srun --gpus=1 --partition=a100-galvani --time=4:00:00 --output=firstmod_job_output --error=firstmod_job_errors sh -c "source ~/.bashrc && conda activate ../env && python -m exp_bert.compute_firstmod_scores --checkpoint_dir ../output_bert/hatexplain/base/best_checkpoint \
-    --data_dir ../data/hatexplain/ \
-    --path_to_save ../output_bert/hatexplain/
-    "&    
 ```
 
-2) Run counterfactual
+ 2) Run counterfactual
 
 ```bash
 python -m exp_bert.run_counterfactual --checkpoint_dir ../output_bert/toxigen/base/best_checkpoint \
         --data_dir ../data/toxigen/ \
         --output_dir ../output_bert/toxigen/ \
         --method IF
-```
-
-```bash
-srun --gpus=1 --partition=2080-galvani --time=14:00:00 --output=if_job_output --error=if_job_errors sh -c "source ~/.bashrc && conda activate ../env && python -m exp_bert.run_counterfactual --checkpoint_dir ../output_bert/toxigen/base/best_checkpoint \
-    --data_dir ../data/toxigen/ \
-    --output_dir ../output_bert/toxigen/\
-    --method IF \
-    --num_runs 3
-    "&
-
-srun --gpus=1 --partition=2080-galvani --time=14:00:00 --output=trak_job_output --error=trak_job_errors sh -c "source ~/.bashrc && conda activate ../env && python -m exp_bert.run_counterfactual --checkpoint_dir ../output_bert/toxigen/base/best_checkpoint \
-    --data_dir ../data/toxigen/ \
-    --output_dir ../output_bert/toxigen/\
-    --method TRAK \
-    --num_runs 3
-    "&
-
-srun --gpus=1 --partition=2080-galvani --time=14:00:00 --output=random_job_output --error=random_job_errors sh -c "source ~/.bashrc && conda activate ../env && python -m exp_bert.run_counterfactual --checkpoint_dir ../output_bert/toxigen/base/best_checkpoint \
-    --data_dir ../data/toxigen/ \
-    --output_dir ../output_bert/toxigen/\
-    --method random \
-    --num_runs 3
-    "&
-
-
-
-
-srun --gpus=1 --partition=2080-galvani --time=4:00:00 --output=if_job_output --error=if_job_errors sh -c "source ~/.bashrc && conda activate ../env && python -m exp_bert.run_counterfactual --checkpoint_dir ../output_bert/hatexplain/base/best_checkpoint \
-    --data_dir ../data/hatexplain/ \
-    --output_dir ../output_bert/hatexplain/\
-    --method IF \
-    --num_runs 3
-    "&
-
-srun --gpus=1 --partition=2080-galvani --time=4:00:00 --output=trak_job_output --error=trak_job_errors sh -c "source ~/.bashrc && conda activate ../env && python -m exp_bert.run_counterfactual --checkpoint_dir ../output_bert/hatexplain/base/best_checkpoint \
-    --data_dir ../data/hatexplain/ \
-    --output_dir ../output_bert/hatexplain/\
-    --method TRAK \
-    --num_runs 3
-    "&
-
-srun --gpus=1 --partition=2080-galvani --time=4:00:00 --output=random_job_output --error=random_job_errors sh -c "source ~/.bashrc && conda activate ../env && python -m exp_bert.run_counterfactual --checkpoint_dir ../output_bert/hatexplain/base/best_checkpoint \
-    --data_dir ../data/hatexplain/ \
-    --output_dir ../output_bert/hatexplain/\
-    --method random \
-    --num_runs 3
-    "&
 ```
 
 and plot the results
@@ -163,36 +100,16 @@ python -m exp_bert.vis_scores --checkpoint_dir ../output_bert/toxigen/base/best_
         --path_to_save vis/vis_bert_toxigen/
 ```
 
-```bash
-python -m exp_bert.vis_counterfactual --checkpoint_dir ../output_bert/hatexplain/base/best_checkpoint \
-        --data_dir ../data/hatexplain/ \
-        --results_dir ../output_bert/hatexplain/ \
-        --path_to_save vis/vis_bert_hatexplain/
-```
-
-```bash
-python -m exp_bert.compute_metrics --checkpoint_dir ../output_bert/hatexplain/base/best_checkpoint \
-        --data_dir ../data/hatexplain/ \
-        --output_dir ../output_bert/hatexplain/ \
-        --path_to_save vis/vis_bert_hatexplain/
-```
 
 3) Compare the results to baseline balancing
 
 ```bash
 
-srun --gpus=1 --partition=2080-galvani --time=2:00:00 --output=balance_job_output --error=balance_job_errors sh -c "source ~/.bashrc && conda activate ../env && python -m exp_bert.run_baseline_balancing --checkpoint_dir ../output_bert/toxigen/base/best_checkpoint \
+python -m exp_bert.run_baseline_balancing --checkpoint_dir ../output_bert/toxigen/base/best_checkpoint \
         --data_dir ../data/toxigen/ \
         --path_to_save res/toxigen/ \
         --path_to_save_model ../output_bert/toxigen/ \
         --output_dir ../output_bert/toxigen/
-    "&
-
-srun --gpus=1 --partition=2080-galvani --time=2:00:00 --output=balance_job_output --error=balance_job_errors sh -c "source ~/.bashrc && conda activate ../env && python -m exp_bert.run_baseline_balancing --checkpoint_dir ../output_bert/hatexplain/base/best_checkpoint \
-        --data_dir ../data/hatexplain/ \
-        --path_to_save res/hatexplain/ \
-        --path_to_save_model ../output_bert/hatexplain/ \
-        --output_dir ../output_bert/hatexplain/
     "&    
 ```
 
@@ -200,10 +117,6 @@ srun --gpus=1 --partition=2080-galvani --time=2:00:00 --output=balance_job_outpu
 python -m exp_bert.vis_scores_matrix --data_dir ../data/toxigen/ \
         --output_dir ../output_bert/toxigen \
         --path_to_save vis/vis_bert_toxigen/
-
-python -m exp_bert.vis_scores_matrix --data_dir ../data/hatexplain/ \
-        --output_dir ../output_bert/hatexplain \
-        --path_to_save vis/vis_bert_hatexplain/
 ```
 
 ```bash
@@ -211,12 +124,6 @@ python -m exp_bert.get_examples --checkpoint_dir ../output_bert/toxigen/base/bes
         --data_dir ../data/toxigen/ \
         --output_dir ../output_bert/toxigen/ \
         --path_to_save res/toxigen/
-
-
-python -m exp_bert.get_examples --checkpoint_dir ../output_bert/hatexplain/base/best_checkpoint \
-        --data_dir ../data/hatexplain/ \
-        --output_dir ../output_bert/hatexplain/ \
-        --path_to_save res/hatexplain/
 ```
 
 
@@ -224,11 +131,6 @@ python -m exp_bert.get_examples --checkpoint_dir ../output_bert/hatexplain/base/
 python -m exp_bert.vis_scores_matrix --data_dir ../data/toxigen/ \
         --output_dir ../output_bert/toxigen/ \
         --path_to_save res/toxigen/
-
-
-python -m exp_bert.vis_scores_matrix --data_dir ../data/hatexplain/ \
-        --output_dir ../output_bert/hatexplain/ \
-        --path_to_save res/hatexplain/
 ```
 
 
@@ -237,10 +139,4 @@ python -m exp_bert.vis_scores_label --checkpoint_dir ../output_bert/toxigen/base
         --data_dir ../data/toxigen/ \
         --output_dir ../output_bert/toxigen/ \
         --path_to_save res/toxigen/
-
-
-python -m exp_bert.vis_scores_label --checkpoint_dir ../output_bert/hatexplain/base/best_checkpoint \
-        --data_dir ../data/hatexplain/ \
-        --output_dir ../output_bert/hatexplain/ \
-        --path_to_save res/hatexplain/
 ```
